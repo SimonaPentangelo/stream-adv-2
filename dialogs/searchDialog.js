@@ -19,19 +19,21 @@ const trakt = new Trakt(options);
 const traktAuthUrl = trakt.get_url();
 
 // Import required types from libraries
+// Import required types from libraries
 const {
-    TextPrompt,
-    ComponentDialog,
-    DialogSet,
-    DialogTurnStatus,
-    WaterfallDialog,
-} = require('botbuilder-dialogs');
-
-const {
-    ActivityTypes
+    ActivityTypes,
+    MessageFactory,
+    InputHints
 } = require('botbuilder');
 
 const { LuisRecognizer } = require('botbuilder-ai');
+
+const { ComponentDialog, 
+        DialogSet, 
+        DialogTurnStatus, 
+        TextPrompt, 
+        WaterfallDialog 
+} = require('botbuilder-dialogs');
 
 const SEARCH_DIALOG = 'SEARCH_DIALOG';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
@@ -89,8 +91,8 @@ class SearchDialog extends ComponentDialog {
                 type: ActivityTypes.Message
             };
 
-            this.luisRecognizer.executeLuisQuery(step.context);
-            switch (this.luisRecognizer.topIntent(luisResult)) {
+            const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
+            switch (LuisRecognizer.topIntent(luisResult)) {
                 case 'MediaFilm': {
                     const filmEntity = this.luisRecognizer.getMediaEntities(luisResult);
                     const messageText = filmEntity.text;
@@ -132,6 +134,10 @@ class SearchDialog extends ComponentDialog {
             return await step.replaceDialog(this.id);
         //}
     }
+    }
+
+    async loopStep(step) {
+        return await step.replaceDialog(this.id);
     }
 }
 module.exports.SearchDialog = SearchDialog;

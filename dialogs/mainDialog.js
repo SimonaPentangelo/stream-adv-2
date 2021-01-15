@@ -40,6 +40,7 @@ class MainDialog extends ComponentDialog {
         this.userState = userState;
         this.userProfileAccessor = this.userState.createProperty(USER_PROFILE_PROPERTY);
         this.addDialog(new TextPrompt(TEXT_PROMPT));
+        this.addDialog(new SearchDialog(luisRecognizer));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.welcomeStep.bind(this),
             this.menuStep.bind(this),
