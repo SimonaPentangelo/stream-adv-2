@@ -14,11 +14,11 @@ class DialogBot extends ActivityHandler {
         this.dialog = dialog;
         this.dialogState = this.conversationState.createProperty('DialogState');
         // See https://aka.ms/about-bot-activity-message to learn more about the message and other activity types.
-        /*this.onMessage(async (context, next) => {
+        this.onMessage(async (context, next) => {
             await this.dialog.run(context, this.dialogState);
             // By calling next() you ensure that the next BotHandler is run.
             await next();
-        });*/
+        });
         this.onMembersAdded(async (context, next) => {
             const membersAdded = context.activity.membersAdded;
             for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
