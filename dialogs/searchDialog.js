@@ -95,35 +95,24 @@ class SearchDialog extends ComponentDialog {
             switch (LuisRecognizer.topIntent(luisResult)) {
                 case 'MediaFilm': {
                     const filmEntity = this.luisRecognizer.getMediaEntities(luisResult);
-                    const messageText = filmEntity.text;
+                    const messageText = filmEntity[0].genere;
+                    console.log(messageText);
                     trakt.search.text({
                         query: 'genres=action',
                         type: 'movie'
                     }).then(response => {
-                       console.log(response);
+                    
                     });
-                    const promptMessage = MessageFactory.text(messageText, messageText, InputHints.ExpectingInput);
-                    return await step.prompt(TEXT_PROMPT, { prompt: promptMessage });
                 }
                 case 'MediaSerie': {
                     const serieEntity = this.luisRecognizer.getMediaEntities(luisResult);
                     const messageText = serieEntity.text;
-                    const promptMessage = MessageFactory.text(messageText, messageText, InputHints.ExpectingInput);
-                    return await step.prompt(TEXT_PROMPT, { prompt: promptMessage });
                 } default: {
                      // The user did not enter input that this bot was built to handle.
                     reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';
                     await step.context.sendActivity(reply)
                 }
-            /*trakt.movies.lists({
-
-            })
-            .then(function(movies) {
-                // Contains Object{} response from API (show data)
-            })
-            .catch(function(err) { 
-                // Handles errors 
-            });
+            /*
             // Call LUIS and gather user request.
             const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
             if (option === 'search' || LuisRecognizer.topIntent(luisResult) === 'search') {

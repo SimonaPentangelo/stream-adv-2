@@ -26,6 +26,8 @@ class StreamAdvLuis {
     getMediaEntities(result) {
         let film, serie, genere;
         let i = 0;
+       console.log(result);
+        
         while(result.entities.$instance.Genere[i]) {
             genere[i] = result.entities.$instance.Genere[i];
             i++;
