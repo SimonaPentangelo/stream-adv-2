@@ -90,12 +90,13 @@ class SearchDialog extends ComponentDialog {
             const reply = {
                 type: ActivityTypes.Message
             };
-
+            process.stdout.write("I will goto the STDOUT");
             const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
             switch (LuisRecognizer.topIntent(luisResult)) {
                 case 'MediaFilm': {
                     const filmEntity = this.luisRecognizer.getMediaEntities(luisResult);
                     const messageText = filmEntity[0].genere;
+                    console.log(filmEntity);
                     trakt.search.text({
                         query: 'genres=action',
                         type: 'movie'
