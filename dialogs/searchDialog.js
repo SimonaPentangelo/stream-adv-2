@@ -96,7 +96,6 @@ class SearchDialog extends ComponentDialog {
                 case 'MediaFilm': {
                     const filmEntity = this.luisRecognizer.getMediaEntities(luisResult);
                     const messageText = filmEntity[0].genere;
-                    console.log(messageText);
                     trakt.search.text({
                         query: 'genres=action',
                         type: 'movie'
