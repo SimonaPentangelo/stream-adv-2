@@ -24,18 +24,23 @@ class StreamAdvLuis {
     }
 
     getMediaEntities(result) {
-        let film, serie, genere;
-        let i = 0;        
-        while(result.entities.$instance.Genere[i]) {
-            genere[i] = result.entities.$instance.Genere[i];
-            i++;
-        }
-        if(result.entities.$instance.SerieTv) {
-            serie = result.entities.$instance.SerieTv.text;
-            return { Serie: serie, Generi: genere };
-        } else if (result.entities.$instance.Film) {
-            film = result.entities.$instance.Film.text;
-            return { Serie: serie, Generi: genere };
+        let film, serie;
+        let genere = [];
+        let i = 0;       
+        if(result.entities.Film) {
+            while(result.entities.Genere[i]) {
+                genere.push(result.entities.Genere[i]);
+                i++;
+            }
+            film = "film"; 
+            return { Media: film, Generi: genere };
+        } else if (result.entities.SerieTv) {
+            while(result.entities.Genere[i]) {
+                genere.push(result.entities.Genere[i]);
+                i++;
+            }
+            serie = "serie tv";
+            return { Media: serie, Generi: genere };
         }   
     }
 }
