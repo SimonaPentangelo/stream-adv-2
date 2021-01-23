@@ -9,6 +9,8 @@ var request = require('request');
 
 // Import required types from libraries
 const {
+    CardFactory,
+    ActionTypes,
     ActivityTypes,
     MessageFactory,
     InputHints
@@ -23,12 +25,9 @@ const { ComponentDialog,
         WaterfallDialog 
 } = require('botbuilder-dialogs');
 
-const {
-    RESULT_DIALOG,
-    ResultDialog
-} = require('./resultDialog');
+const { RESULT_DIALOG,
+    ResultDialog } = require('./resultDialog');
 
-const RESULT_TEXT = 'RESULT_TEXT';
 const SEARCH_DIALOG = 'SEARCH_DIALOG';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
@@ -41,17 +40,16 @@ class SearchDialog extends ComponentDialog {
         this.luisRecognizer = luisRecognizer;
         // Adding used dialogs
         this.addDialog(new TextPrompt(TEXT_PROMPT));
-        this.addDialog(new ResultDialog(luisRecognizer, RESULT_TEXT));
+        this.addDialog(new ResultDialog(luisRecognizer));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.inputStep.bind(this),
             this.searchStep.bind(this),
-            this.resultStep.bind(this),
-            this.branchStep.bing(this),
-            this.loopStep.bind(this),
+            this.loopStep.bind(this)
         ]));
 
         this.initialDialogId = WATERFALL_DIALOG;
     }
+    
     
     /**
      * The run method handles the incoming activity (in the form of a TurnContext) and passes it through the dialog system.
@@ -89,9 +87,6 @@ class SearchDialog extends ComponentDialog {
                 headers: {
                 'Content-Type': 'application/json',
                 }}, function (error, response, body) {
-                //console.log('Status:', response.statusCode);
-                //console.log('Headers:', JSON.stringify(response.headers));
-                console.log('Response:', body);
                 gen = JSON.parse(body);
                 resolve(gen);
             });
@@ -106,10 +101,8 @@ class SearchDialog extends ComponentDialog {
                     url: 'http://api.themoviedb.org/3/genre/tv/list?api_key=c3fca9451dd83145763b68b068f2fdc2&language=it-IT',
                     headers: {
                     'Content-Type': 'application/json',
-                    }}, function (error, response, body) {
-                    //console.log('Status:', response.statusCode);
-                    //console.log('Headers:', JSON.stringify(response.headers));
-                    console.log('Response:', body);
+                    }
+                }, function (error, response, body) {
                     gen = JSON.parse(body);
                     resolve(gen);
                 });
@@ -124,10 +117,8 @@ class SearchDialog extends ComponentDialog {
                     url: 'https://api.themoviedb.org/3/search/keyword?api_key=c3fca9451dd83145763b68b068f2fdc2&query=' + s,
                     headers: {
                     'Content-Type': 'application/json',
-                    }}, function (error, response, body) {
-                    //console.log('Status:', response.statusCode);
-                    //console.log('Headers:', JSON.stringify(response.headers));
-                    //console.log('Response:', body);
+                    }
+                }, function (error, response, body) {
                     var obj = JSON.parse(body);
                     var i = 0;
                     while(obj.results[i]) {
@@ -142,7 +133,7 @@ class SearchDialog extends ComponentDialog {
             });
         }
 
-    getResult(urlString) {
+    getResult(urlString, type) {
         var res = [];
         return new Promise(function(resolve, reject) {
             request({
@@ -151,17 +142,31 @@ class SearchDialog extends ComponentDialog {
              headers: {
              'Content-Type': 'application/json',
              }}, function (error, response, body) {
-             var obj = JSON.parse(body);
-             var i = 0;
-             while(obj.results[i]) {
-                var s = JSON.stringify(obj.results[i].title);
-                res.push(s.substring(1, s.length - 1));
-                if(i == 6) {
-                    break;
-                }
-                i++;
-             }
-             resolve(res);
+                 if(type == 'film') {
+                    var obj = JSON.parse(body);
+                    var i = 0;
+                    while(obj.results[i]) {
+                       var s = JSON.stringify(obj.results[i].title);
+                       res.push(s.substring(1, s.length - 1));
+                       if(i == 6) {
+                           break;
+                       }
+                       i++;
+                    }
+                    resolve(res);
+                 } else {
+                    var obj = JSON.parse(body);
+                    var i = 0;
+                    while(obj.results[i]) {
+                       var s = JSON.stringify(obj.results[i].name);
+                       res.push(s.substring(1, s.length - 1));
+                       if(i == 6) {
+                           break;
+                       }
+                       i++;
+                    }
+                    resolve(res);
+                 }
          });
      });
     }
@@ -171,7 +176,7 @@ class SearchDialog extends ComponentDialog {
             const reply = {
                 type: ActivityTypes.Message
             };
-            const luis = step.result;
+            
             const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
             const res = await this.luisRecognizer.getMediaEntities(luisResult);
             //console.log("risultato: " + res.Media + " " + res.Generi[0]);
@@ -179,8 +184,7 @@ class SearchDialog extends ComponentDialog {
                 case 'film': {
 
                     var gen = await this.getGenresMovies();
-
-                    console.log("RESULT: " + gen.genres[0].id);
+                    console.log("STAMPA: " + gen.genres);
                     let i = 0;
                     let countG = 0;
                     let countC = 0;
@@ -288,7 +292,7 @@ class SearchDialog extends ComponentDialog {
                                 break; }
                             case "biografico": {
                                 //biography
-                                var obj = await getKeyword("biography");
+                                var obj = await this.getKeyword("biography");
                                   if(countC != 0) {
                                     stringaChiavi = stringaChiavi.concat(",");
                                   }
@@ -331,7 +335,7 @@ class SearchDialog extends ComponentDialog {
                                 break; }
                             case "cult": {
                                 //cult
-                                var obj = await getKeyword("cult");  
+                                var obj = await this.getKeyword("cult");  
                                   if(countC != 0) {
                                     stringaChiavi.push(",");
                                   }
@@ -373,7 +377,7 @@ class SearchDialog extends ComponentDialog {
                                 break; }
                             case "noir": {
                                 //noir
-                                var obj = await getKeyword("noir");
+                                var obj = await this.getKeyword("noir");
                                   
                                   if(countC != 0) {
                                     stringaChiavi = stringaChiavi.concat(",");
@@ -385,7 +389,7 @@ class SearchDialog extends ComponentDialog {
                                 break; }
                             case "poliziesco": { 
                                 //police
-                                var obj = getKeyword("police");
+                                var obj = await this.getKeyword("police");
                                   
                                   if(countC != 0) {
                                     stringaChiavi = stringaChiavi.concat(",");
@@ -393,7 +397,7 @@ class SearchDialog extends ComponentDialog {
                                   countC++;
                                   console.log(stringa);
                                   var temp2 = JSON.stringify(obj.id);
-                                  stringaGeneri = stringaGeneri.concat(temp2);
+                                  stringaChiavi = stringaChiavi.concat(temp2);
                                 break; }
                             case "sci-fi": {
                                 if(countG != 0) {
@@ -413,14 +417,14 @@ class SearchDialog extends ComponentDialog {
                                  break; }
                             case "supereroi": {
                                 //superhero 
-                                var obj = this.getKeyword("superhero");
+                                var obj = await this.getKeyword("superhero");
                                   if(countC != 0) {
                                     stringaChiavi = stringaChiavi.concat(",");
                                   }
                                   countC++;
                                   console.log(stringa);
                                   var temp2 = JSON.stringify(obj.id);
-                                  stringaGeneri = stringaGeneri.concat(temp2);
+                                  stringaChiavi = stringaChiavi.concat(temp2);
                                 break; }
                             case "thriller": {
                                 if(countG != 0) {
@@ -470,6 +474,17 @@ class SearchDialog extends ComponentDialog {
                                 j++;
                                 } 
                                 break; }
+                            case "giallo": {
+                                   //giallo
+                                var obj = await this.getKeyword("giallo");
+                                if(countC != 0) {
+                                  stringaChiavi = stringaChiavi.concat(",");
+                                }
+                                countC++;
+                                console.log(stringa);
+                                var temp2 = JSON.stringify(obj.id);
+                                stringaChiavi = stringaChiavi.concat(temp2);
+                              break; }
                             default: break;
                         }
                         i++;
@@ -487,20 +502,21 @@ class SearchDialog extends ComponentDialog {
                         reqQuery = "https://api.themoviedb.org/3/discover/movie?api_key=c3fca9451dd83145763b68b068f2fdc2&language=it-IT&with_keywords=" + stringaChiavi + "&with_genres=" + stringaGeneri + "&page=1"
                     }
                     console.log(reqQuery);
-                    var result = await this.getResult(reqQuery);
+                    var result = await this.getResult(reqQuery, "film");
                     console.log(result);
-                    return await step.beginDialog(RESULT_DIALOG, result);    
+                    return await step.beginDialog(RESULT_DIALOG, { list : result });
                 }
                 case 'serie tv': {
 
-                    var gen = this.getGenresShows();
-
-                    console.log("RESULT: " + gen.genres[0].id);
+                    var gen = await this.getGenresShows();
+                    console.log("STAMPA: " + gen.genres);
                     let i = 0;
                     let countG = 0;
                     let countC = 0;
                     let stringaGeneri = "";
                     let stringaChiavi = "";
+                    console.log("SONO QUI");
+                    console.log(res.Generi[i]);
                     while(res.Generi[i]) {
                         var s = JSON.stringify(res.Generi[i]);
                         s = s.substring(2, s.length - 2);
@@ -603,7 +619,7 @@ class SearchDialog extends ComponentDialog {
                                 break; }
                             case "biografico": {
                                 //biography
-                                var obj = await getKeyword("biography");
+                                var obj = await this.getKeyword("biography");
                                   if(countC != 0) {
                                     stringaChiavi = stringaChiavi.concat(",");
                                   }
@@ -613,7 +629,7 @@ class SearchDialog extends ComponentDialog {
                                 break; }
                             case "storico": { 
                                 //history
-                                var obj = await getKeyword("history");
+                                var obj = await this.getKeyword("history");
                                 if(countC != 0) {
                                   stringaChiavi = stringaChiavi.concat(",");
                                 }
@@ -639,7 +655,7 @@ class SearchDialog extends ComponentDialog {
                                 break; }
                             case "cult": {
                                 //cult
-                                var obj = await getKeyword("cult");  
+                                var obj = await this.getKeyword("cult");  
                                   if(countC != 0) {
                                     stringaChiavi.push(",");
                                   }
@@ -649,7 +665,7 @@ class SearchDialog extends ComponentDialog {
                                 break; }
                             case "documentario": { 
                                 //documentario
-                                var obj = await getKeyword("documentario");
+                                var obj = await this.getKeyword("documentario");
                                   
                                     if(countC != 0) {
                                         stringaChiavi = stringaChiavi.concat(",");
@@ -660,7 +676,7 @@ class SearchDialog extends ComponentDialog {
                                 break; }
                             case "horror": { 
                                //horror
-                                var obj = await getKeyword("horror");
+                                var obj = await this.getKeyword("horror");
                                   
                                     if(countC != 0) {
                                         stringaChiavi = stringaChiavi.concat(",");
@@ -671,7 +687,7 @@ class SearchDialog extends ComponentDialog {
                                 break; }
                             case "noir": {
                                 //noir
-                                var obj = await getKeyword("noir");
+                                var obj = await this.getKeyword("noir");
                                   
                                   if(countC != 0) {
                                     stringaChiavi = stringaChiavi.concat(",");
@@ -682,14 +698,14 @@ class SearchDialog extends ComponentDialog {
                                 break; }
                             case "poliziesco": { 
                                 //police
-                                var obj = getKeyword("police");
+                                var obj = await this.getKeyword("police");
                                   
                                   if(countC != 0) {
                                     stringaChiavi = stringaChiavi.concat(",");
                                   }
                                   countC++;
                                   var temp2 = JSON.stringify(obj.id);
-                                  stringaGeneri = stringaGeneri.concat(temp2);
+                                  stringaChiavi = stringaChiavi.concat(temp2);
                                 break; }
                             case "sci-fi": {
                                 if(countG != 0) {
@@ -709,23 +725,23 @@ class SearchDialog extends ComponentDialog {
                                  break; }
                             case "supereroi": {
                                 //superhero 
-                                var obj = this.getKeyword("superhero");
+                                var obj = await this.getKeyword("superhero");
                                   if(countC != 0) {
                                     stringaChiavi = stringaChiavi.concat(",");
                                   }
                                   countC++;
                                   var temp2 = JSON.stringify(obj.id);
-                                  stringaGeneri = stringaGeneri.concat(temp2);
+                                  stringaChiavi = stringaChiavi.concat(temp2);
                                 break; }
                             case "thriller": {
                                 //thriller
-                                var obj = this.getKeyword("thriller");
+                                var obj = await this.getKeyword("thriller");
                                   if(countC != 0) {
                                     stringaChiavi = stringaChiavi.concat(",");
                                   }
                                   countC++;
                                   var temp2 = JSON.stringify(obj.id);
-                                  stringaGeneri = stringaGeneri.concat(temp2);
+                                  stringaChiavi = stringaChiavi.concat(temp2);
                                 break; }
                             case "western": { 
                                 if(i != 0) {
@@ -745,14 +761,25 @@ class SearchDialog extends ComponentDialog {
                                 break; }
                             case "romantico": {
                                 //romance
-                                var obj = this.getKeyword("romance");
+                                var obj = await this.getKeyword("romance");
                                   if(countC != 0) {
                                     stringaChiavi = stringaChiavi.concat(",");
                                   }
                                   countC++;
                                   var temp2 = JSON.stringify(obj.id);
-                                  stringaGeneri = stringaGeneri.concat(temp2);
+                                  stringaChiavi = stringaChiavi.concat(temp2);
                                 break; }
+                            case "giallo": {
+                                    //giallo
+                                 var obj = await this.getKeyword("giallo");
+                                 if(countC != 0) {
+                                   stringaChiavi = stringaChiavi.concat(",");
+                                 }
+                                 countC++;
+                                 console.log(stringa);
+                                 var temp2 = JSON.stringify(obj.id);
+                                 stringaChiavi = stringaChiavi.concat(temp2);
+                               break; }
                             default: break;
                         }
                         i++;
@@ -770,9 +797,9 @@ class SearchDialog extends ComponentDialog {
                         reqQuery = "https://api.themoviedb.org/3/discover/tv?api_key=c3fca9451dd83145763b68b068f2fdc2&language=it-IT&with_keywords=" + stringaChiavi + "&with_genres=" + stringaGeneri + "&page=1"
                     }
                     console.log(reqQuery);
-                    var result = await this.getResult(reqQuery);
+                    var result = await this.getResult(reqQuery, "serie tv");
                     console.log(result);
-                    return await step.beginDialog(RESULT_DIALOG, result);    
+                    return await step.beginDialog(RESULT_DIALOG, { list : result });
                 } default: {
                      // The user did not enter input that this bot was built to handle.
                     reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';
@@ -783,8 +810,10 @@ class SearchDialog extends ComponentDialog {
     }
     
     async loopStep(step) {
-        return await step.replaceDialog(this.id);
+        if(step.results != -1) {
+            return await step.replaceDialog(this.id);
+        }
     }
-}
+ }
 module.exports.SearchDialog = SearchDialog;
 module.exports.SEARCH_DIALOG = SEARCH_DIALOG;

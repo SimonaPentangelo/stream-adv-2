@@ -62,11 +62,7 @@ class MainDialog extends ComponentDialog {
             await dialogContext.beginDialog(this.id);
         }
     }
-    /**
-     * First step in the waterfall dialog. Prompts the user for a command.
-     * Currently, this expects a booking request, like "book me a flight from Paris to Berlin on march 22"
-     * Note that the sample LUIS model will only recognize Paris, Berlin, New York and London as airport cities.
-     */
+
     async welcomeStep(step) {
         if (!this.luisRecognizer.isConfigured) {
             const messageText = 'NOTE: LUIS is not configured. To enable all capabilities, add `LuisAppId`, `LuisAPIKey` and `LuisAPIHostName` to the .env file.';
@@ -77,11 +73,7 @@ class MainDialog extends ComponentDialog {
         const promptMessage = MessageFactory.text(messageText, messageText, InputHints.ExpectingInput);
         return await step.prompt(TEXT_PROMPT, { prompt: promptMessage });
     }
-    /**
-     * Second step in the waterfall.  This will use LUIS to attempt to extract the origin, destination and travel dates.
-     * Then, it hands off to the bookingDialog child dialog to collect any remaining details.
-     */
-        // Shows the menu or forward the text to next step
+
         async menuStep(step) {
             const message = step.result;
             if (message === 'menu') {
