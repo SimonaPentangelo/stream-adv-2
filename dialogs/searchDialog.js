@@ -31,6 +31,7 @@ const { RESULT_DIALOG,
 const SEARCH_DIALOG = 'SEARCH_DIALOG';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
+const KEY_TMDB = process.env.TheMovieDBAPI;
 
 // Secondary dialog, manages the reservation of a new seminar by composing an email
 class SearchDialog extends ComponentDialog {
@@ -83,7 +84,7 @@ class SearchDialog extends ComponentDialog {
         return new Promise(function(resolve, reject) {
             request({
                 method: 'GET',
-                url: 'http://api.themoviedb.org/3/genre/movie/list?api_key=c3fca9451dd83145763b68b068f2fdc2&language=it-IT',
+                url: 'http://api.themoviedb.org/3/genre/movie/list?api_key=' + KEY_TMDB + '&language=it-IT',
                 headers: {
                 'Content-Type': 'application/json',
                 }}, function (error, response, body) {
@@ -98,7 +99,7 @@ class SearchDialog extends ComponentDialog {
             return new Promise(function(resolve, reject) {
                 request({
                     method: 'GET',
-                    url: 'http://api.themoviedb.org/3/genre/tv/list?api_key=c3fca9451dd83145763b68b068f2fdc2&language=it-IT',
+                    url: 'http://api.themoviedb.org/3/genre/tv/list?api_key=' + KEY_TMDB + '&language=it-IT',
                     headers: {
                     'Content-Type': 'application/json',
                     }
@@ -114,19 +115,23 @@ class SearchDialog extends ComponentDialog {
             return new Promise(function(resolve, reject) {
                    request({
                      method: 'GET',
-                    url: 'https://api.themoviedb.org/3/search/keyword?api_key=c3fca9451dd83145763b68b068f2fdc2&query=' + s,
+                    url: 'https://api.themoviedb.org/3/search/keyword?api_key=' + KEY_TMDB + '&query=' + s,
                     headers: {
                     'Content-Type': 'application/json',
                     }
                 }, function (error, response, body) {
                     var obj = JSON.parse(body);
                     var i = 0;
+                    console.log('https://api.themoviedb.org/3/search/keyword?api_key=' + KEY_TMDB + '&query=' + s);
                     while(obj.results[i]) {
+                        console.log(obj.results[i]);
                         if(obj.results[i].name == s) {
                             console.log("TROVATA");
                             key = obj.results[i];
+                            console.log("KEY: " + key);
                             break;
                         }
+                        i++;
                     }
                     resolve(key);
                 });
@@ -485,6 +490,22 @@ class SearchDialog extends ComponentDialog {
                                 var temp2 = JSON.stringify(obj.id);
                                 stringaChiavi = stringaChiavi.concat(temp2);
                               break; }
+                            case "azione": {
+                                if(countG != 0) {
+                                    stringaGeneri = stringaGeneri.concat(",");
+                                }
+                                countG++;
+                                var j = 0;
+                                while(gen.genres[j]) {
+                                        var temp = JSON.stringify(gen.genres[j].name);
+                                        var stringa = temp.substring(1, temp.length - 1)
+                                    if(stringa == "Azione") {
+                                        var temp2 = JSON.stringify(gen.genres[j].id);
+                                        stringaGeneri = stringaGeneri.concat(temp2);
+                                    }
+                                    j++;
+                                } 
+                                break; }
                             default: break;
                         }
                         i++;
@@ -495,16 +516,16 @@ class SearchDialog extends ComponentDialog {
                     var reqQuery;
 
                     if(stringaChiavi == "") {
-                        reqQuery = "https://api.themoviedb.org/3/discover/movie?api_key=c3fca9451dd83145763b68b068f2fdc2&language=it-IT&with_genres=" + stringaGeneri + "&page=1";
+                        reqQuery = "https://api.themoviedb.org/3/discover/movie?api_key=" + KEY_TMDB + "&language=it-IT&with_genres=" + stringaGeneri + "&page=1";
                     } else if(stringaGeneri == "") {
-                        reqQuery = "https://api.themoviedb.org/3/discover/movie?api_key=c3fca9451dd83145763b68b068f2fdc2&language=it-IT&with_keywords=" + stringaChiavi + "&page=1";
+                        reqQuery = "https://api.themoviedb.org/3/discover/movie?api_key=" + KEY_TMDB + "&language=it-IT&with_keywords=" + stringaChiavi + "&page=1";
                     } else {
-                        reqQuery = "https://api.themoviedb.org/3/discover/movie?api_key=c3fca9451dd83145763b68b068f2fdc2&language=it-IT&with_keywords=" + stringaChiavi + "&with_genres=" + stringaGeneri + "&page=1"
+                        reqQuery = "https://api.themoviedb.org/3/discover/movie?api_key=" + KEY_TMDB + "&language=it-IT&with_keywords=" + stringaChiavi + "&with_genres=" + stringaGeneri + "&page=1"
                     }
                     console.log(reqQuery);
                     var result = await this.getResult(reqQuery, "film");
                     console.log(result);
-                    return await step.beginDialog(RESULT_DIALOG, { list : result });
+                    return await step.beginDialog(RESULT_DIALOG, { type : 'movie', list : result });
                 }
                 case 'serie tv': {
 
@@ -520,6 +541,7 @@ class SearchDialog extends ComponentDialog {
                     while(res.Generi[i]) {
                         var s = JSON.stringify(res.Generi[i]);
                         s = s.substring(2, s.length - 2);
+                        console.log(s);
                         switch(s) {
                             case "crime": {
                                 if(countG != 0) {
@@ -629,6 +651,7 @@ class SearchDialog extends ComponentDialog {
                                 break; }
                             case "storico": { 
                                 //history
+                                console.log('QUI QUO QUA');
                                 var obj = await this.getKeyword("history");
                                 if(countC != 0) {
                                   stringaChiavi = stringaChiavi.concat(",");
@@ -780,6 +803,22 @@ class SearchDialog extends ComponentDialog {
                                  var temp2 = JSON.stringify(obj.id);
                                  stringaChiavi = stringaChiavi.concat(temp2);
                                break; }
+                            case "azione": {
+                                if(countG != 0) {
+                                    stringaGeneri = stringaGeneri.concat(",");
+                                }
+                                countG++;
+                                var j = 0;
+                                while(gen.genres[j]) {
+                                        var temp = JSON.stringify(gen.genres[j].name);
+                                        var stringa = temp.substring(1, temp.length - 1)
+                                    if(stringa == "Action & Adventure") {
+                                        var temp2 = JSON.stringify(gen.genres[j].id);
+                                        stringaGeneri = stringaGeneri.concat(temp2);
+                                    }
+                                    j++;
+                                } 
+                                break; }
                             default: break;
                         }
                         i++;
@@ -790,16 +829,16 @@ class SearchDialog extends ComponentDialog {
                     var reqQuery;
 
                     if(stringaChiavi == "") {
-                        reqQuery = "https://api.themoviedb.org/3/discover/tv?api_key=c3fca9451dd83145763b68b068f2fdc2&language=it-IT&with_genres=" + stringaGeneri + "&page=1";
+                        reqQuery = "https://api.themoviedb.org/3/discover/tv?api_key=" + KEY_TMDB + "&language=it-IT&with_genres=" + stringaGeneri + "&page=1";
                     } else if(stringaGeneri == "") {
-                        reqQuery = "https://api.themoviedb.org/3/discover/tv?api_key=c3fca9451dd83145763b68b068f2fdc2&language=it-IT&with_keywords=" + stringaChiavi + "&page=1";
+                        reqQuery = "https://api.themoviedb.org/3/discover/tv?api_key=" + KEY_TMDB + "&language=it-IT&with_keywords=" + stringaChiavi + "&page=1";
                     } else {
-                        reqQuery = "https://api.themoviedb.org/3/discover/tv?api_key=c3fca9451dd83145763b68b068f2fdc2&language=it-IT&with_keywords=" + stringaChiavi + "&with_genres=" + stringaGeneri + "&page=1"
+                        reqQuery = "https://api.themoviedb.org/3/discover/tv?api_key=" + KEY_TMDB + "&language=it-IT&with_keywords=" + stringaChiavi + "&with_genres=" + stringaGeneri + "&page=1"
                     }
                     console.log(reqQuery);
                     var result = await this.getResult(reqQuery, "serie tv");
                     console.log(result);
-                    return await step.beginDialog(RESULT_DIALOG, { list : result });
+                    return await step.beginDialog(RESULT_DIALOG, { type : 'tv', list : result });
                 } default: {
                      // The user did not enter input that this bot was built to handle.
                     reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';

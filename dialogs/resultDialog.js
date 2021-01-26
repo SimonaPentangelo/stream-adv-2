@@ -29,8 +29,10 @@ const { BING_DIALOG,
 const RESULT_DIALOG = 'RESULT_DIALOG';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
+var info = [];
 var result = [];
 var count = 0;
+var type;
 
 class ResultDialog extends ComponentDialog {
     constructor(luisRecognizer) {
@@ -41,7 +43,7 @@ class ResultDialog extends ComponentDialog {
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.resultStep.bind(this),
             this.branchStep.bind(this),
-            this.endStep.bing(this)
+            this.endStep.bind(this)
         ]));
 
         this.initialDialogId = WATERFALL_DIALOG;
@@ -64,13 +66,11 @@ class ResultDialog extends ComponentDialog {
     }
     
     async resultStep(step) {
-        var info = [];
         if(count == 0) {
+            type = step.options.type;
             info = step.options.list;
-            result = step.options.list;
-        } else {
-            info = result;
-        }
+            count++;
+        } 
         console.log("CIAO");
     
         var buttons = [];
@@ -119,11 +119,10 @@ class ResultDialog extends ComponentDialog {
             count = 0;
             return await step.endDialog({ res : -1 });
         } else {
-            console.log(result[0]);
             var i = 0;
             while(true) {
-                if(result[i] === option) {
-                   return await step.beginDialog(BING_DIALOG, { title : option }); 
+                if(info[i] === option) {
+                   return await step.beginDialog(BING_DIALOG, { media: type, title : option }); 
                 } else {
                     i++;
                     if(i == 6) {
@@ -142,7 +141,11 @@ class ResultDialog extends ComponentDialog {
     }
 
     async endStep(step) {
-        if(step.results == 1) {
+        console.log('HO UN SERPENTE NELLO STIVALE ' + step.result.res);
+        if(step.result.res == 1) {
+            count = 0;
+            return await step.endDialog({ res : -1 });
+        } else {
             return await step.replaceDialog(this.id);
         }
     }
