@@ -26,6 +26,16 @@ const {
     SearchDialog
 } = require('./searchDialog');
 
+const {
+    REGISTRATION_DIALOG,
+    RegistrationDialog
+} = require('./registrationDialog');
+
+const {
+    LOGIN_DIALOG,
+    LoginDialog
+} = require('./loginDialog');
+
 const MAIN_DIALOG = 'MAIN_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
 const USER_PROFILE_PROPERTY = 'USER_PROFILE_PROPERTY';
