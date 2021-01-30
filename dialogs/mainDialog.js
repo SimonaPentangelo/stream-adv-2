@@ -26,10 +26,10 @@ const {
     SearchDialog
 } = require('./searchDialog');
 
-const {
+/*const {
     REGISTRATION_DIALOG,
     RegistrationDialog
-} = require('./registrationDialog');
+} = require('./registrationDialog');*/
 
 const {
     LOGIN_DIALOG,
@@ -51,6 +51,7 @@ class MainDialog extends ComponentDialog {
         this.userProfileAccessor = this.userState.createProperty(USER_PROFILE_PROPERTY);
         this.addDialog(new TextPrompt(TEXT_PROMPT));
         this.addDialog(new SearchDialog(luisRecognizer));
+        this.addDialog(new LoginDialog());
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.welcomeStep.bind(this),
             this.menuStep.bind(this),
@@ -134,7 +135,7 @@ class MainDialog extends ComponentDialog {
         if (option === 'search' || LuisRecognizer.topIntent(luisResult) === 'search') {
             return await step.beginDialog(SEARCH_DIALOG);    
         } else if (option === 'login' || LuisRecognizer.topIntent(luisResult) === 'login') {
-            //aaa
+            return await step.beginDialog(LOGIN_DIALOG);    
         } else if (option === 'registration' || LuisRecognizer.topIntent(luisResult) === 'registration') {    
             //aaa
         } else {
