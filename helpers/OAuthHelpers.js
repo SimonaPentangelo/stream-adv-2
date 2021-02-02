@@ -23,8 +23,7 @@ class OAuthHelpers {
         // Pull in the data from Microsoft Graph.
         const client = new SimpleGraphClient(tokenResponse.token);
         const me = await client.getMe();
-
-        await context.sendActivity(`Tu sei ${ me.displayName }.`);
+        return me.displayName;
     }
 
     /**
@@ -43,8 +42,7 @@ class OAuthHelpers {
         // Pull in the data from Microsoft Graph.
         const client = new SimpleGraphClient(tokenResponse.token);
         const me = await client.getMe();
-
-        await context.sendActivity(`La tua e-mail: ${ me.mail }.`);
+        return me.userPrincipalName;
     }
 }
 

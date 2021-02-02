@@ -35,11 +35,12 @@ var count = 0;
 var type;
 
 class ResultDialog extends ComponentDialog {
-    constructor(luisRecognizer) {
+    constructor(luisRecognizer, userProfileAccessor) {
         super(RESULT_DIALOG);
 
         this.luisRecognizer = luisRecognizer;
-        this.addDialog(new BingDialog(luisRecognizer));
+        this.userProfileAccessor = userProfileAccessor
+        this.addDialog(new BingDialog(luisRecognizer, userProfileAccessor));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.resultStep.bind(this),
             this.branchStep.bind(this),
@@ -104,7 +105,7 @@ class ResultDialog extends ComponentDialog {
             reply.attachments = [card];
             await step.context.sendActivity(reply);
             return await step.prompt(TEXT_PROMPT, {
-                prompt: 'Seleziona un\'opzione per vederne i dettagli, o scrivi "search" per fare una nuova ricerca.'
+                prompt: 'Seleziona un\'opzione per vederne i dettagli.\nScrivi "search" per fare una nuova ricerca.\nScrivi "menu" per tornare al menu principale.'
             });
     }
 
@@ -117,7 +118,10 @@ class ResultDialog extends ComponentDialog {
         const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
         if (option === 'search' || LuisRecognizer.topIntent(luisResult) === 'search') {
             count = 0;
-            return await step.endDialog({ res : -1 });
+            return await step.endDialog();
+        } else if(option === 'menu' || LuisRecognizer.topIntent(luisResult) === 'menu') { 
+            count = 0;
+            return await step.endDialog({ res : 1 });
         } else {
             var i = 0;
             while(true) {
@@ -141,10 +145,8 @@ class ResultDialog extends ComponentDialog {
     }
 
     async endStep(step) {
-        console.log('HO UN SERPENTE NELLO STIVALE ' + step.result.res);
-        if(step.result.res == 1) {
-            count = 0;
-            return await step.endDialog({ res : -1 });
+        if(step.result.res == -1) {
+            return await step.endDialog();
         } else {
             return await step.replaceDialog(this.id);
         }

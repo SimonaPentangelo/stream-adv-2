@@ -9,8 +9,6 @@ var request = require('request');
 
 // Import required types from libraries
 const {
-    CardFactory,
-    ActionTypes,
     ActivityTypes,
     MessageFactory,
     InputHints
@@ -35,13 +33,14 @@ const KEY_TMDB = process.env.TheMovieDBAPI;
 
 // Secondary dialog, manages the reservation of a new seminar by composing an email
 class SearchDialog extends ComponentDialog {
-    constructor(luisRecognizer) {
+    constructor(luisRecognizer, userProfileAccessor) {
         super(SEARCH_DIALOG);
 
         this.luisRecognizer = luisRecognizer;
+        this.userProfileAccessor = userProfileAccessor;
         // Adding used dialogs
         this.addDialog(new TextPrompt(TEXT_PROMPT));
-        this.addDialog(new ResultDialog(luisRecognizer));
+        this.addDialog(new ResultDialog(this.luisRecognizer, this.userProfileAccessor));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.inputStep.bind(this),
             this.searchStep.bind(this),
@@ -849,8 +848,10 @@ class SearchDialog extends ComponentDialog {
     }
     
     async loopStep(step) {
-        if(step.results != -1) {
+        if(step.result == undefined) {
             return await step.replaceDialog(this.id);
+        } else {
+            return await step.endDialog();
         }
     }
  }

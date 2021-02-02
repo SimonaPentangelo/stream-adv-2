@@ -26,20 +26,28 @@ const {
     SearchDialog
 } = require('./searchDialog');
 
-/*const {
-    REGISTRATION_DIALOG,
-    RegistrationDialog
-} = require('./registrationDialog');*/
-
 const {
     LOGIN_DIALOG,
     LoginDialog
 } = require('./loginDialog');
 
+/*
+const {
+    WATCHLIST_DIALOG,
+    WatchlistDialog
+} = require('./watchlistDialog');
+ */
+
+const {
+    LOGOUT_DIALOG,
+    LogoutDialog
+} = require('./logoutDialog');
+
 const MAIN_DIALOG = 'MAIN_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
-const USER_PROFILE_PROPERTY = 'USER_PROFILE_PROPERTY';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
+const USER_PROFILE_PROPERTY = 'USER_PROFILE_PROPERTY';
+var login;
 
 class MainDialog extends ComponentDialog {
     constructor(luisRecognizer, userState) {
@@ -47,13 +55,14 @@ class MainDialog extends ComponentDialog {
     
         if (!luisRecognizer) throw new Error('[MainDialog]: Missing parameter \'luisRecognizer\' is required');
         this.luisRecognizer = luisRecognizer;
-        this.userState = userState;
-        this.userProfileAccessor = this.userState.createProperty(USER_PROFILE_PROPERTY);
+        this.userState = this.userState;
+        this.userProfileAccessor = userState.createProperty(USER_PROFILE_PROPERTY);
         this.addDialog(new TextPrompt(TEXT_PROMPT));
-        this.addDialog(new SearchDialog(luisRecognizer));
-        this.addDialog(new LoginDialog());
+        this.addDialog(new SearchDialog(this.luisRecognizer, this.userProfileAccessor));
+        this.addDialog(new LoginDialog(this.userProfileAccessor));
+        //this.addDialog(new WatchListDialog(this.userProfileAccessor));
+        this.addDialog(new LogoutDialog(this.userProfileAccessor));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
-            this.welcomeStep.bind(this),
             this.menuStep.bind(this),
             this.optionsStep.bind(this),
             this.loopStep.bind(this)
@@ -74,39 +83,38 @@ class MainDialog extends ComponentDialog {
         }
     }
 
-    async welcomeStep(step) {
-        if (!this.luisRecognizer.isConfigured) {
-            const messageText = 'NOTE: LUIS is not configured. To enable all capabilities, add `LuisAppId`, `LuisAPIKey` and `LuisAPIHostName` to the .env file.';
-            await step.context.sendActivity(messageText, null, InputHints.IgnoringInput);
-            return await step.next();
-        }
-        const messageText = step.options.restartMsg ? step.options.restartMsg : `Come posso aiutarti?\n\nSe vuoi sapere cosa posso fare per te scrivi "menu"`;
-        const promptMessage = MessageFactory.text(messageText, messageText, InputHints.ExpectingInput);
-        return await step.prompt(TEXT_PROMPT, { prompt: promptMessage });
-    }
-
         async menuStep(step) {
-            const message = step.result;
-            if (message === 'menu') {
+            let userProfile = await this.userProfileAccessor.get(step.context);
                 const reply = {
                     type: ActivityTypes.Message
                 };
-                const buttons = [{
+                var buttons = [{
                         type: ActionTypes.ImBack,
                         title: 'Chiedimi di fare una ricerca per te',
                         value: 'search'
-                    },
-                    {
+                    }
+                ];
+
+                console.log("PROFILE: " + userProfile);
+                if(userProfile == undefined) {
+                    buttons.push({
                         type: ActionTypes.ImBack,
                         title: 'Effettua il login',
                         value: 'login'
-                    },
-                    {
+                    });
+                } else {
+                    buttons.push({
                         type: ActionTypes.ImBack,
-                        title: 'Registrati',
-                        value: 'registration'
-                    }
-                ];
+                        title: 'Gestisci watchlist',
+                        value: 'watchlist'
+                    });
+
+                    buttons.push({
+                        type: ActionTypes.ImBack,
+                        title: 'Logout',
+                        value: 'logout'
+                    });
+                }
                 const card = CardFactory.heroCard(
                     '',
                     undefined,
@@ -119,9 +127,6 @@ class MainDialog extends ComponentDialog {
                 return await step.prompt(TEXT_PROMPT, {
                     prompt: 'Seleziona un\'opzione dal menu per proseguire!'
                 });
-            } else {
-                return await step.next(message);
-            }
         }
 
      // Forwards to the correct dialog based on the menu option or the intent recognized by LUIS
@@ -131,13 +136,15 @@ class MainDialog extends ComponentDialog {
         };
         const option = step.result;
         // Call LUIS and gather user request.
-        const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
-        if (option === 'search' || LuisRecognizer.topIntent(luisResult) === 'search') {
+        //const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
+        if (option === 'search' /*|| LuisRecognizer.topIntent(luisResult) === 'search'*/) {
             return await step.beginDialog(SEARCH_DIALOG);    
-        } else if (option === 'login' || LuisRecognizer.topIntent(luisResult) === 'login') {
+        } else if (option === 'login' /*|| LuisRecognizer.topIntent(luisResult) === 'login'*/) {
             return await step.beginDialog(LOGIN_DIALOG);    
-        } else if (option === 'registration' || LuisRecognizer.topIntent(luisResult) === 'registration') {    
-            //aaa
+        } else if(option === 'watchlist' /*|| LuisRecognizer.topIntent(luisResult) === 'watchlist'*/) {
+            //return await step.beginDialog(WATCHLIST_DIALOG); 
+        } else if(option === 'logout' /*|| LuisRecognizer.topIntent(luisResult) === 'logout'*/) {
+            return await step.beginDialog(LOGOUT_DIALOG, { logout : login }); 
         } else {
             // The user did not enter input that this bot was built to handle.
             reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';
@@ -145,7 +152,15 @@ class MainDialog extends ComponentDialog {
         }
         return await step.replaceDialog(this.id);
     }
+
     async loopStep(step) {
+        if(step.result != undefined) {
+            console.log(step.result.res);
+            login = step.result.res;
+        } else {
+            login = undefined;
+            this.userProfileAccessor.set(step.context, undefined);
+        }
         return await step.replaceDialog(this.id);
     }
 }

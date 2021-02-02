@@ -22,6 +22,11 @@ const { ComponentDialog,
         TextPrompt
 } = require('botbuilder-dialogs');
 
+const {
+    LOGIN_DIALOG,
+    LoginDialog
+} = require('./loginDialog');
+
 const BING_DIALOG = 'BING_DIALOG';;
 const TEXT_PROMPT = 'TEXT_PROMPT';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
@@ -38,14 +43,16 @@ var streaming;
 var id;
 
 class BingDialog extends ComponentDialog {
-    constructor(luisRecognizer) {
+    constructor(luisRecognizer, userProfileAccessor) {
         super(BING_DIALOG);
     
         this.luisRecognizer = luisRecognizer;
+        this.userProfileAccessor = userProfileAccessor;
         this.addDialog(new TextPrompt(TEXT_PROMPT));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.searchStep.bind(this),
-            this.branchStep.bind(this)
+            this.branchStep.bind(this),
+            this.endStep.bind(this)
         ]));
         this.initialDialogId = WATERFALL_DIALOG;
     }
@@ -89,7 +96,7 @@ class BingDialog extends ComponentDialog {
                 }}, function (error, response, body) {
                 console.log('https://api.themoviedb.org/3/' + type + '/' + id + '/watch/providers?api_key=' + KEY_TMDB);
                 var s = JSON.parse(body);
-                if(s.results.IT == undefined || s.results.IT.flatrate[0] == undefined) {
+                if(s.results == undefined || s.results.IT == undefined || s.results.IT.flatrate[0].provider_name == undefined) {
                     streaming = "Streaming non disponibile.";
                 } else if(s.results.IT != undefined){
                     streaming = "In streaming su: " + s.results.IT.flatrate[0].provider_name;
@@ -111,12 +118,16 @@ class BingDialog extends ComponentDialog {
             console.log("URL: " + url);
             if(type == 'movie') {
                 id = url.substring(33, 40);
+                console.log('ID: ' + id);
             } else {
-                id = url.substring(30, 35);
+                id = url.substring(30, 34);
+                console.log('ID: ' + id);
             }
-            image = "https://www.themoviedb.org/"
+            console.log(webPage.openGraphImage.contentUrl.substring(21));
             var img = webPage.openGraphImage.contentUrl.substring(21);
+            image = "https://www.themoviedb.org/"
             image = image.concat(img);
+            console.log('IMMAGINE: ' + image);
             snippet = webPage.snippet;
             streaming = await this.getStreaming();
             count++;
@@ -204,26 +215,41 @@ class BingDialog extends ComponentDialog {
     }  
 
     async branchStep(step) {
-        console.log("SONO QUI");
+        let userProfile = await this.userProfileAccessor.get(step.context);
         const reply = {
             type: ActivityTypes.Message
         };
-        console.log("PROVA: " + JSON.stringify(step.context.activity.text));
         const option = JSON.stringify(step.context.activity.text);
         if (option === "\"search\"") {
             count = 0;
-            return await step.endDialog({ res : 1 });
+            return await step.endDialog({ res : -1 });
         } else if (option === "\"add\"") {
-           //per ora nulla
+            if(userProfile != undefined) {
+                //per ora nulla
+            } else {
+                reply.text = `Per aggiungerlo alla tua watchlist, devi fare il login.`;
+                await step.context.sendActivity(reply); 
+                return await step.beginDialog(LOGIN_DIALOG);   
+            }
         } else if(option === "\"back\"") {
             count = 0;
-            return await step.endDialog({ res : -1 });
+            return await step.endDialog({ res : 1 });
         } else {
             // The user did not enter input that this bot was built to handle.
             reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';
             await step.context.sendActivity(reply)
         }
         return await step.replaceDialog(this.id);
+    }
+
+    async endStep(step) {
+        console.log(step.result.res);
+        count = 0;
+        if(step.result.res == 1) {
+            return await step.replaceDialog(this.id);
+        } else {
+            return await step.endDialog({ res : 1 });
+        }
     }
 
 }

@@ -1,43 +1,41 @@
 
+const { ComponentDialog, 
+    DialogSet, 
+    DialogTurnStatus, 
+    WaterfallDialog,
+    OAuthPrompt
+} = require('botbuilder-dialogs');
 
-const { ActivityTypes } = require('botbuilder');
-const { ComponentDialog } = require('botbuilder-dialogs');
+const LOGOUT_DIALOG = 'LOGOUT_DIALOG';
+const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
+var logout;
 
 class LogoutDialog extends ComponentDialog {
-    constructor(id, connectionName) {
-        super(id);
-        this.connectionName = connectionName;
+    constructor(userProfileAccessor) {
+        super(LOGOUT_DIALOG);
+
+        this.userProfileAccessor = userProfileAccessor;
+        this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
+            this.logoutStep.bind(this)
+        ]));
+        this.initialDialogId = WATERFALL_DIALOG;
     }
 
-    async onBeginDialog(innerDc, options) {
-        const result = await this.interrupt(innerDc);
-        if (result) {
-            return result;
+    async run(turnContext, accessor) {
+        const dialogSet = new DialogSet(accessor);
+        dialogSet.add(this);
+        const dialogContext = await dialogSet.createContext(turnContext);
+        const results = await dialogContext.continueDialog();
+        if (results.status === DialogTurnStatus.empty) {
+            await dialogContext.beginDialog(this.id);
         }
-
-        return await super.onBeginDialog(innerDc, options);
     }
 
-    async onContinueDialog(innerDc) {
-        const result = await this.interrupt(innerDc);
-        if (result) {
-            return result;
-        }
-
-        return await super.onContinueDialog(innerDc);
-    }
-
-    async interrupt(innerDc) {
-        if (innerDc.context.activity.type === ActivityTypes.Message) {
-            const text = innerDc.context.activity.text.toLowerCase();
-            if (text === 'logout') {
-                // The bot adapter encapsulates the authentication processes.
-                const botAdapter = innerDc.context.adapter;
-                await botAdapter.signOutUser(innerDc.context, this.connectionName);
-                await innerDc.context.sendActivity('Logout effettuato con successo.');
-                return await innerDc.cancelAllDialogs();
-            }
-        }
+    async logoutStep(step) {
+        logout = step.options.logout;
+        await logout.signOutUser(step.context);
+        await step.context.sendActivity('Il logout è andato a buon fine.');
+        return await step.endDialog();
     }
 }
 

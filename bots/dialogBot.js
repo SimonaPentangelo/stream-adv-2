@@ -19,6 +19,25 @@ class DialogBot extends ActivityHandler {
             // By calling next() you ensure that the next BotHandler is run.
             await next();
         });
+        /*this.onMessage(async (turnContext, next) => {
+            // Get the state properties from the turn context.
+            const userProfile = await this.userProfileAccessor.get(turnContext, {});
+            const conversationData = await this.conversationDataAccessor.get(
+                turnContext, { promptedForUserName: false });
+
+            if (!userProfile.name) {
+                // First time around this is undefined, so we will prompt user for name.
+                if (conversationData.promptedForUserName) {
+                    // Set the name to what the user provided.
+                    userProfile.name = turnContext.activity.text;
+
+                    // Reset the flag to allow the bot to go though the cycle again.
+                    conversationData.promptedForUserName = false;
+                } 
+            } 
+            // By calling next() you ensure that the next BotHandler is run.
+            await next();
+        });*/
         this.onMembersAdded(async (context, next) => {
             const membersAdded = context.activity.membersAdded;
             for (let cnt = 0; cnt < membersAdded.length; ++cnt) {

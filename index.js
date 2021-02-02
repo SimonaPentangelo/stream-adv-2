@@ -22,8 +22,8 @@ const { StreamAdvLuis } = require('./luis/StreamAdvLuis');
 //const { DialogAndWelcomeBot } = require('./bots/dialogAndWelcomeBot');
 const { DialogBot } = require('./bots/dialogBot');
 
-const { MainDialog } = require('./dialogs/mainDialog');
-const MAIN_DIALOG = 'mainDialog';
+const { WelcomeDialog } = require('./dialogs/welcomeDialog');
+const WELCOME_DIALOG = 'welcomeDialog';
 
 // Create adapter.
 // See https://aka.ms/about-bot-adapter to learn more about adapters.
@@ -76,7 +76,7 @@ const luisConfig = { applicationId: LuisAppId, endpointKey: LuisAPIKey, endpoint
 const luisRecognizer = new StreamAdvLuis(luisConfig);
 
 // Create the main dialog.
-const dialog = new MainDialog(luisRecognizer, userState);
+const dialog = new WelcomeDialog(luisRecognizer, userState);
 //const bot = new DialogAndWelcomeBot(conversationState, userState, dialog);
 const bot = new DialogBot(conversationState, userState, dialog);
 
