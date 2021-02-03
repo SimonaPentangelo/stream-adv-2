@@ -16,6 +16,7 @@
         "url": "https://github.com/Microsoft/BotBuilder-Samples.git"
     },
     "dependencies": {
+        "@azure/cosmos": "^3.9.5",
         "@microsoft/microsoft-graph-client": "^2.2.1",
         "@microsoft/recognizers-text-data-types-timex-expression": "1.1.4",
         "adaptivecards": "^2.6.0",

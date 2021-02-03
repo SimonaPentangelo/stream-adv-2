@@ -4,7 +4,6 @@
 require('dotenv').config({ path: 'C:\Users\Simona\Desktop\stream-adv\.env' });
 
 var request = require("request");
-var AdaptiveCards = require("adaptivecards");
 
 // Import required types from libraries
 const {
@@ -26,6 +25,12 @@ const {
     LOGIN_DIALOG,
     LoginDialog
 } = require('./loginDialog');
+
+const {
+    WATCHLISTADD_DIALOG,
+    WatchlistAddDialog
+} = require('./watchlistAddDialog');
+
 
 const BING_DIALOG = 'BING_DIALOG';;
 const TEXT_PROMPT = 'TEXT_PROMPT';
@@ -49,6 +54,7 @@ class BingDialog extends ComponentDialog {
         this.luisRecognizer = luisRecognizer;
         this.userProfileAccessor = userProfileAccessor;
         this.addDialog(new TextPrompt(TEXT_PROMPT));
+        this.addDialog(new WatchlistAddDialog(userProfileAccessor));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.searchStep.bind(this),
             this.branchStep.bind(this),
@@ -225,7 +231,15 @@ class BingDialog extends ComponentDialog {
             return await step.endDialog({ res : -1 });
         } else if (option === "\"add\"") {
             if(userProfile != undefined) {
-                //per ora nulla
+                var m = {
+                    "id_tmdb": id,
+                    "title": title,
+                    "type": type,
+                    "image": image,
+                    "snippet": snippet,
+                    "streaming": streaming
+                }
+                return await step.beginDialog(WATCHLISTADD_DIALOG, { media : m });   
             } else {
                 reply.text = `Per aggiungerlo alla tua watchlist, devi fare il login.`;
                 await step.context.sendActivity(reply); 

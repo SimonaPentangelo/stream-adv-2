@@ -14,7 +14,6 @@ const {
     InputHints
 } = require('botbuilder');
 
-const { LuisRecognizer } = require('botbuilder-ai');
 
 const { ComponentDialog, 
         DialogSet, 

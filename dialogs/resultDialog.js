@@ -105,7 +105,7 @@ class ResultDialog extends ComponentDialog {
             reply.attachments = [card];
             await step.context.sendActivity(reply);
             return await step.prompt(TEXT_PROMPT, {
-                prompt: 'Seleziona un\'opzione per vederne i dettagli.\nScrivi "search" per fare una nuova ricerca.\nScrivi "menu" per tornare al menu principale.'
+                prompt: 'Seleziona un\'opzione per vederne i dettagli.\n\n• Scrivi "search" per fare una nuova ricerca.\n\n• Scrivi "menu" per tornare al menu principale.'
             });
     }
 
@@ -115,11 +115,11 @@ class ResultDialog extends ComponentDialog {
             type: ActivityTypes.Message
         };
         const option = step.result;
-        const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
-        if (option === 'search' || LuisRecognizer.topIntent(luisResult) === 'search') {
+        //const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
+        if (option === 'search' /*|| LuisRecognizer.topIntent(luisResult) === 'search'*/) {
             count = 0;
             return await step.endDialog();
-        } else if(option === 'menu' || LuisRecognizer.topIntent(luisResult) === 'menu') { 
+        } else if(option === 'menu' /*|| LuisRecognizer.topIntent(luisResult) === 'menu'*/) { 
             count = 0;
             return await step.endDialog({ res : 1 });
         } else {

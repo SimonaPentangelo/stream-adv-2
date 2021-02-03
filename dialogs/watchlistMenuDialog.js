@@ -12,8 +12,6 @@ const {
     InputHints
 } = require('botbuilder');
 
-const { LuisRecognizer } = require('botbuilder-ai');
-
 const { ComponentDialog, 
         DialogSet, 
         DialogTurnStatus, 
@@ -33,35 +31,33 @@ const {
 
 /*
 const {
-    WATCHLISTMENU_DIALOG,
-    WatchlistMenuDialog
-} = require('./watchlistMenuDialog');
+    WATCHLISTDELETE_DIALOG,
+    WatchlistDeleteDialog
+} = require('./watchlistDeleteDialog');
  */
 
+/*
 const {
-    LOGOUT_DIALOG,
-    LogoutDialog
-} = require('./logoutDialog');
+    WATCHLISTSHOW_DIALOG,
+    WatchlistShowDialog
+} = require('./watchlistShowDialog');
+ */
 
-const MAIN_DIALOG = 'MAIN_DIALOG';
+const WATCHLISTMENU_DIALOG = 'MAIN_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 const USER_PROFILE_PROPERTY = 'USER_PROFILE_PROPERTY';
 var login;
 
 class MainDialog extends ComponentDialog {
-    constructor(luisRecognizer, userState) {
-        super(MAIN_DIALOG);
-    
-        if (!luisRecognizer) throw new Error('[MainDialog]: Missing parameter \'luisRecognizer\' is required');
-        this.luisRecognizer = luisRecognizer;
-        this.userState = this.userState;
-        this.userProfileAccessor = userState.createProperty(USER_PROFILE_PROPERTY);
+    constructor(userProfileAccessor) {
+        super(WATCHLISTMENU_DIALOG);
+
+        this.userProfileAccessor = userProfileAccessor;
+
         this.addDialog(new TextPrompt(TEXT_PROMPT));
-        this.addDialog(new SearchDialog(this.luisRecognizer, this.userProfileAccessor));
-        this.addDialog(new LoginDialog(this.userProfileAccessor));
-        //this.addDialog(new WatchlistMenuDialog(this.userProfileAccessor));
-        this.addDialog(new LogoutDialog(this.userProfileAccessor));
+        //this.addDialog(new WatchlistDeleteDialog(this.userProfileAccessor));
+        //this.addDialog(new WatchlistShowDialog(this.userProfileAccessor));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.menuStep.bind(this),
             this.optionsStep.bind(this),
@@ -84,42 +80,32 @@ class MainDialog extends ComponentDialog {
     }
 
         async menuStep(step) {
-            let userProfile = await this.userProfileAccessor.get(step.context);
                 const reply = {
                     type: ActivityTypes.Message
                 };
                 var buttons = [{
                         type: ActionTypes.ImBack,
-                        title: 'Chiedimi di fare una ricerca per te',
-                        value: 'search'
+                        title: 'Guarda la tua watchlist.',
+                        value: 'watchlist'
+                    },
+                    {
+                        type: ActionTypes.ImBack,
+                        title: 'Cancella un elemento dalla lista.',
+                        value: 'delete'
+                    },
+                    {
+                        type: ActionTypes.ImBack,
+                        title: 'Torna indietro.',
+                        value: 'back'
                     }
+                    
                 ];
 
-                console.log("PROFILE: " + userProfile);
-                if(userProfile == undefined) {
-                    buttons.push({
-                        type: ActionTypes.ImBack,
-                        title: 'Effettua il login',
-                        value: 'login'
-                    });
-                } else {
-                    buttons.push({
-                        type: ActionTypes.ImBack,
-                        title: 'Gestisci watchlist',
-                        value: 'watchlist'
-                    });
-
-                    buttons.push({
-                        type: ActionTypes.ImBack,
-                        title: 'Logout',
-                        value: 'logout'
-                    });
-                }
                 const card = CardFactory.heroCard(
                     '',
                     undefined,
                     buttons, {
-                        text: 'StreamAdvisors\'s menu'
+                        text: 'Watchlist\'s menu'
                     }
                 );
                 reply.attachments = [card];
@@ -137,14 +123,12 @@ class MainDialog extends ComponentDialog {
         const option = step.result;
         // Call LUIS and gather user request.
         //const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
-        if (option === 'search' /*|| LuisRecognizer.topIntent(luisResult) === 'search'*/) {
-            return await step.beginDialog(SEARCH_DIALOG);    
-        } else if (option === 'login' /*|| LuisRecognizer.topIntent(luisResult) === 'login'*/) {
-            return await step.beginDialog(LOGIN_DIALOG);    
-        } else if(option === 'watchlist' /*|| LuisRecognizer.topIntent(luisResult) === 'watchlist'*/) {
-            //return await step.beginDialog(WATCHLISTMENU_DIALOG); 
-        } else if(option === 'logout' /*|| LuisRecognizer.topIntent(luisResult) === 'logout'*/) {
-            return await step.beginDialog(LOGOUT_DIALOG, { logout : login }); 
+        if (option === 'watchlist' /*|| LuisRecognizer.topIntent(luisResult) === 'search'*/) {
+            //return await step.beginDialog(WATCHLISTSHOW_DIALOG);    
+        } else if (option === 'delete' /*|| LuisRecognizer.topIntent(luisResult) === 'login'*/) {
+            //return await step.beginDialog(WATCHLISTDELETE_DIALOG);    
+        } else if(option === 'back' /*|| LuisRecognizer.topIntent(luisResult) === 'watchlist'*/) {
+            return await step.endDialog({ res : -1 });
         } else {
             // The user did not enter input that this bot was built to handle.
             reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';
@@ -154,15 +138,8 @@ class MainDialog extends ComponentDialog {
     }
 
     async loopStep(step) {
-        if(step.result != undefined) {
-            console.log(step.result.res);
-            login = step.result.res;
-        } else {
-            login = undefined;
-            this.userProfileAccessor.set(step.context, undefined);
-        }
         return await step.replaceDialog(this.id);
     }
 }
-module.exports.MainDialog = MainDialog;
-module.exports.MAIN_DIALOG = MAIN_DIALOG;
+module.exports.WatchlistMenuDialog = WatchlistMenuDialog;
+module.exports.WATCHLISTMENU_DIALOG = WATCHLISTMENU_DIALOG;
