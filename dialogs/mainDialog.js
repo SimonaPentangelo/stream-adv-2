@@ -7,9 +7,7 @@ require('dotenv').config({ path: 'C:\Users\Simona\Desktop\stream-adv\.env' });
 const {
     ActionTypes,
     ActivityTypes,
-    CardFactory,
-    MessageFactory,
-    InputHints
+    CardFactory
 } = require('botbuilder');
 
 const { LuisRecognizer } = require('botbuilder-ai');
@@ -31,12 +29,10 @@ const {
     LoginDialog
 } = require('./loginDialog');
 
-/*
 const {
     WATCHLISTMENU_DIALOG,
     WatchlistMenuDialog
 } = require('./watchlistMenuDialog');
- */
 
 const {
     LOGOUT_DIALOG,
@@ -57,16 +53,16 @@ class MainDialog extends ComponentDialog {
         this.luisRecognizer = luisRecognizer;
         this.userState = this.userState;
         this.userProfileAccessor = userState.createProperty(USER_PROFILE_PROPERTY);
-        this.addDialog(new TextPrompt(TEXT_PROMPT));
-        this.addDialog(new SearchDialog(this.luisRecognizer, this.userProfileAccessor));
         this.addDialog(new LoginDialog(this.userProfileAccessor));
-        //this.addDialog(new WatchlistMenuDialog(this.userProfileAccessor));
-        this.addDialog(new LogoutDialog(this.userProfileAccessor));
+        this.addDialog(new TextPrompt(TEXT_PROMPT));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.menuStep.bind(this),
             this.optionsStep.bind(this),
             this.loopStep.bind(this)
         ]));
+        this.addDialog(new SearchDialog(this.luisRecognizer, this.userProfileAccessor));
+        this.addDialog(new LogoutDialog(this.userProfileAccessor));
+        this.addDialog(new WatchlistMenuDialog(this.userProfileAccessor));
         this.initialDialogId = WATERFALL_DIALOG;
     }
     /**
@@ -84,6 +80,7 @@ class MainDialog extends ComponentDialog {
     }
 
         async menuStep(step) {
+            console.log("MENUSTEP");
             let userProfile = await this.userProfileAccessor.get(step.context);
                 const reply = {
                     type: ActivityTypes.Message
@@ -142,7 +139,7 @@ class MainDialog extends ComponentDialog {
         } else if (option === 'login' /*|| LuisRecognizer.topIntent(luisResult) === 'login'*/) {
             return await step.beginDialog(LOGIN_DIALOG);    
         } else if(option === 'watchlist' /*|| LuisRecognizer.topIntent(luisResult) === 'watchlist'*/) {
-            //return await step.beginDialog(WATCHLISTMENU_DIALOG); 
+            return await step.beginDialog(WATCHLISTMENU_DIALOG); 
         } else if(option === 'logout' /*|| LuisRecognizer.topIntent(luisResult) === 'logout'*/) {
             return await step.beginDialog(LOGOUT_DIALOG, { logout : login }); 
         } else {
@@ -154,14 +151,19 @@ class MainDialog extends ComponentDialog {
     }
 
     async loopStep(step) {
-        if(step.result != undefined) {
-            console.log(step.result.res);
+        console.log("AAAAAAAAA");
+        if(step.result != undefined && step.result.res != -1) {
             login = step.result.res;
+            console.log("AAAAAAAAA111111111");
+            return await step.replaceDialog(this.id);
+        } else if(step.result != undefined && step.result.res == -1) {
+            return await step.replaceDialog(this.id);
         } else {
             login = undefined;
             this.userProfileAccessor.set(step.context, undefined);
+            console.log("AAAAAAAAA2222222222");
+            return await step.replaceDialog(this.id);
         }
-        return await step.replaceDialog(this.id);
     }
 }
 module.exports.MainDialog = MainDialog;

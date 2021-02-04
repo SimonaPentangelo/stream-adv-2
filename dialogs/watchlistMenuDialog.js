@@ -7,9 +7,7 @@ require('dotenv').config({ path: 'C:\Users\Simona\Desktop\stream-adv\.env' });
 const {
     ActionTypes,
     ActivityTypes,
-    CardFactory,
-    MessageFactory,
-    InputHints
+    CardFactory
 } = require('botbuilder');
 
 const { ComponentDialog, 
@@ -18,16 +16,6 @@ const { ComponentDialog,
         TextPrompt, 
         WaterfallDialog 
 } = require('botbuilder-dialogs');
-
-const {
-    SEARCH_DIALOG,
-    SearchDialog
-} = require('./searchDialog');
-
-const {
-    LOGIN_DIALOG,
-    LoginDialog
-} = require('./loginDialog');
 
 /*
 const {
@@ -46,10 +34,8 @@ const {
 const WATCHLISTMENU_DIALOG = 'MAIN_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
-const USER_PROFILE_PROPERTY = 'USER_PROFILE_PROPERTY';
-var login;
 
-class MainDialog extends ComponentDialog {
+class WatchlistMenuDialog extends ComponentDialog {
     constructor(userProfileAccessor) {
         super(WATCHLISTMENU_DIALOG);
 
@@ -80,6 +66,7 @@ class MainDialog extends ComponentDialog {
     }
 
         async menuStep(step) {
+            console.log('PORCODIO');
                 const reply = {
                     type: ActivityTypes.Message
                 };

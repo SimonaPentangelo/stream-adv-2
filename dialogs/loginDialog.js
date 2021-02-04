@@ -21,6 +21,7 @@ const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 const OAUTH_PROMPT = 'OAUTH_PROMPT';
 const CONFIRM_PROMPT = 'CONFIRM_PROMPT';
 var prompt;
+
 class LoginDialog extends ComponentDialog {
     constructor(userProfileAccessor) {
         super(LOGIN_DIALOG, process.env.connectionName);
