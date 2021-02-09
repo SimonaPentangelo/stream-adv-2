@@ -53,16 +53,16 @@ class MainDialog extends ComponentDialog {
         this.luisRecognizer = luisRecognizer;
         this.userState = this.userState;
         this.userProfileAccessor = userState.createProperty(USER_PROFILE_PROPERTY);
-        this.addDialog(new LoginDialog(this.userProfileAccessor));
-        this.addDialog(new TextPrompt(TEXT_PROMPT));
-        this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
-            this.menuStep.bind(this),
-            this.optionsStep.bind(this),
-            this.loopStep.bind(this)
-        ]));
         this.addDialog(new SearchDialog(this.luisRecognizer, this.userProfileAccessor));
         this.addDialog(new LogoutDialog(this.userProfileAccessor));
         this.addDialog(new WatchlistMenuDialog(this.userProfileAccessor));
+        this.addDialog(new LoginDialog(this.userProfileAccessor));
+        this.addDialog(new TextPrompt(TEXT_PROMPT));
+        this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
+            this.mainMenuStep.bind(this),
+            this.mainOptionsStep.bind(this),
+            this.mainLoopStep.bind(this)
+        ]));
         this.initialDialogId = WATERFALL_DIALOG;
     }
     /**
@@ -74,12 +74,13 @@ class MainDialog extends ComponentDialog {
         dialogSet.add(this);
         const dialogContext = await dialogSet.createContext(turnContext);
         const results = await dialogContext.continueDialog();
+        console.log(results);
         if (results.status === DialogTurnStatus.empty) {
             await dialogContext.beginDialog(this.id);
         }
     }
 
-        async menuStep(step) {
+        async mainMenuStep(step) {
             console.log("MENUSTEP");
             let userProfile = await this.userProfileAccessor.get(step.context);
                 const reply = {
@@ -103,7 +104,7 @@ class MainDialog extends ComponentDialog {
                     buttons.push({
                         type: ActionTypes.ImBack,
                         title: 'Gestisci watchlist',
-                        value: 'watchlist'
+                        value: 'manage'
                     });
 
                     buttons.push({
@@ -127,43 +128,36 @@ class MainDialog extends ComponentDialog {
         }
 
      // Forwards to the correct dialog based on the menu option or the intent recognized by LUIS
-     async optionsStep(step) {
+     async mainOptionsStep(step) {
         const reply = {
             type: ActivityTypes.Message
         };
         const option = step.result;
-        // Call LUIS and gather user request.
         //const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
         if (option === 'search' /*|| LuisRecognizer.topIntent(luisResult) === 'search'*/) {
             return await step.beginDialog(SEARCH_DIALOG);    
         } else if (option === 'login' /*|| LuisRecognizer.topIntent(luisResult) === 'login'*/) {
             return await step.beginDialog(LOGIN_DIALOG);    
-        } else if(option === 'watchlist' /*|| LuisRecognizer.topIntent(luisResult) === 'watchlist'*/) {
-            return await step.beginDialog(WATCHLISTMENU_DIALOG); 
+        } else if(option === 'manage' /*|| LuisRecognizer.topIntent(luisResult) === 'watchlist'*/) {
+            return await step.beginDialog(WATCHLISTMENU_DIALOG);
         } else if(option === 'logout' /*|| LuisRecognizer.topIntent(luisResult) === 'logout'*/) {
             return await step.beginDialog(LOGOUT_DIALOG, { logout : login }); 
         } else {
-            // The user did not enter input that this bot was built to handle.
             reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';
             await step.context.sendActivity(reply)
         }
         return await step.replaceDialog(this.id);
     }
 
-    async loopStep(step) {
-        console.log("AAAAAAAAA");
-        if(step.result != undefined && step.result.res != -1) {
-            login = step.result.res;
-            console.log("AAAAAAAAA111111111");
-            return await step.replaceDialog(this.id);
-        } else if(step.result != undefined && step.result.res == -1) {
-            return await step.replaceDialog(this.id);
-        } else {
+    async mainLoopStep(step) {
+        if(step.result != undefined && step.result.res == "LOGIN") {
+            login = step.result.login;
+        } else if(step.result != undefined && step.result.res == "LOGOUT") {
             login = undefined;
             this.userProfileAccessor.set(step.context, undefined);
-            console.log("AAAAAAAAA2222222222");
-            return await step.replaceDialog(this.id);
         }
+        console.log(this.id);
+        return await step.replaceDialog(this.id);
     }
 }
 module.exports.MainDialog = MainDialog;

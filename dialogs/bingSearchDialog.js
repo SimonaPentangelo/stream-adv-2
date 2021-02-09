@@ -46,6 +46,7 @@ var image;
 var snippet;
 var streaming;
 var id;
+var idFound;
 
 class BingDialog extends ComponentDialog {
     constructor(luisRecognizer, userProfileAccessor) {
@@ -78,14 +79,23 @@ class BingDialog extends ComponentDialog {
         return new Promise(function(resolve, reject) {
             var info = {
                 url: 'https://api.bing.microsoft.com/v7.0/custom/search?' + 
-                    'q=' + result + '&customconfig=' + CUSTOM_CONFIG + '&mkt=en-US',
+                    'q=' + idFound + '&customconfig=' + CUSTOM_CONFIG + '&mkt=en-US',
                 headers: {
                     'Ocp-Apim-Subscription-Key' : BING_KEY
                 }
             }
             request(info, function(error, response, body){
                 var searchResponse = JSON.parse(body);
-                webPage = searchResponse.webPages.value[0];
+                var i = 0;
+                while(i < searchResponse.webPages.value.length) {
+                    if(searchResponse.webPages.value[i].displayUrl.includes(idFound) && searchResponse.webPages.value[i].displayUrl.includes(type) && !searchResponse.webPages.value[i].displayUrl.includes("season")) {
+                        webPage = searchResponse.webPages.value[i];
+                        break;
+                    } else {
+                        i++;
+                    }
+                }
+                console.log("QUESTO DOVREBBE ESSE IL RISULTATO: " + JSON.stringify(webPage));
                 resolve(webPage);
             });
         });
@@ -102,10 +112,19 @@ class BingDialog extends ComponentDialog {
                 }}, function (error, response, body) {
                 console.log('https://api.themoviedb.org/3/' + type + '/' + id + '/watch/providers?api_key=' + KEY_TMDB);
                 var s = JSON.parse(body);
-                if(s.results == undefined || s.results.IT == undefined || s.results.IT.flatrate[0].provider_name == undefined) {
+                if(s.results == undefined || s.results.IT == undefined || s.results.IT.flatrate == undefined) {
                     streaming = "Streaming non disponibile.";
                 } else if(s.results.IT != undefined){
-                    streaming = "In streaming su: " + s.results.IT.flatrate[0].provider_name;
+                    var i = 0;
+                    var str = "";
+                    while(s.results.IT.flatrate[i] != undefined) {
+                        if(i != 0) {
+                            str = str.concat(", ");
+                        }
+                        str = str.concat(s.results.IT.flatrate[i].provider_name);
+                        i++;
+                    }
+                    streaming = "In streaming su: " + str;
                 }
                 resolve(streaming);
             });
@@ -119,20 +138,19 @@ class BingDialog extends ComponentDialog {
         if(count == 0) {
             result = step.options.title;
             type = step.options.media;
+            idFound = step.options.id;
             var webPage = await this.getMedia();
             url = webPage.url;
             console.log("URL: " + url);
-            if(type == 'movie') {
-                id = url.substring(33, 40);
-                console.log('ID: ' + id);
-            } else {
-                id = url.substring(30, 34);
-                console.log('ID: ' + id);
-            }
+            id = idFound;
             console.log(webPage.openGraphImage.contentUrl.substring(21));
-            var img = webPage.openGraphImage.contentUrl.substring(21);
-            image = "https://www.themoviedb.org/"
-            image = image.concat(img);
+            if(webPage.openGraphImage.contentUrl.includes("bing")) {
+                var img = webPage.openGraphImage.contentUrl.substring(21);
+                image = "https://www.themoviedb.org/"
+                image = image.concat(img);
+            } else {
+                image = webPage.openGraphImage.contentUrl;
+            }
             console.log('IMMAGINE: ' + image);
             snippet = webPage.snippet;
             streaming = await this.getStreaming();
@@ -221,33 +239,29 @@ class BingDialog extends ComponentDialog {
     }  
 
     async branchStep(step) {
-        let userProfile = await this.userProfileAccessor.get(step.context);
         const reply = {
             type: ActivityTypes.Message
         };
         const option = JSON.stringify(step.context.activity.text);
         if (option === "\"search\"") {
             count = 0;
-            return await step.endDialog({ res : -1 });
+            console.log("search");
+            return await step.endDialog({ res : "SEARCH" });
         } else if (option === "\"add\"") {
-            if(userProfile != undefined) {
                 var m = {
                     "id_tmdb": id,
-                    "title": title,
+                    "title": result,
                     "type": type,
                     "image": image,
                     "snippet": snippet,
                     "streaming": streaming
                 }
+                console.log("SEARCH " + JSON.stringify(m));
                 return await step.beginDialog(WATCHLISTADD_DIALOG, { media : m });   
-            } else {
-                reply.text = `Per aggiungerlo alla tua watchlist, devi fare il login.`;
-                await step.context.sendActivity(reply); 
-                return await step.beginDialog(LOGIN_DIALOG);   
-            }
         } else if(option === "\"back\"") {
             count = 0;
-            return await step.endDialog({ res : 1 });
+            console.log("result");
+            return await step.endDialog({ res : "RESULT" });
         } else {
             // The user did not enter input that this bot was built to handle.
             reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';
@@ -257,12 +271,14 @@ class BingDialog extends ComponentDialog {
     }
 
     async endStep(step) {
-        console.log(step.result.res);
-        count = 0;
-        if(step.result.res == 1) {
-            return await step.replaceDialog(this.id);
+        console.log("END BING SEARCH");
+        if(step.result != undefined) {
+            if(step.result.res == "RESULT") {
+                count = 0;
+                return await step.endDialog({ res : "RESULT" });
+            }
         } else {
-            return await step.endDialog({ res : 1 });
+            return await step.replaceDialog(this.id);
         }
     }
 

@@ -33,9 +33,10 @@ class LogoutDialog extends ComponentDialog {
 
     async logoutStep(step) {
         logout = step.options.logout;
-        await logout.signOutUser(step.context);
+        console.log(logout);
+        await logout.signOutUser(step.context, process.env.connectionName);
         await step.context.sendActivity('Il logout è andato a buon fine.');
-        return await step.endDialog();
+        return await step.endDialog({ res : "LOGOUT" });
     }
 }
 

@@ -150,7 +150,8 @@ class SearchDialog extends ComponentDialog {
                     var i = 0;
                     while(obj.results[i]) {
                        var s = JSON.stringify(obj.results[i].title);
-                       res.push(s.substring(1, s.length - 1));
+                       var ide = JSON.stringify(obj.results[i].id);
+                       res.push({ name:s.substring(1, s.length - 1), id: ide });
                        if(i == 6) {
                            break;
                        }
@@ -162,12 +163,14 @@ class SearchDialog extends ComponentDialog {
                     var i = 0;
                     while(obj.results[i]) {
                        var s = JSON.stringify(obj.results[i].name);
-                       res.push(s.substring(1, s.length - 1));
+                       var ide = JSON.stringify(obj.results[i].id);
+                       res.push({ name:s.substring(1, s.length - 1), id: ide });
                        if(i == 6) {
                            break;
                        }
                        i++;
                     }
+                    console.log("SEARCH DIALOG: " + res);
                     resolve(res);
                  }
          });
@@ -182,7 +185,13 @@ class SearchDialog extends ComponentDialog {
             
             const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
             const res = await this.luisRecognizer.getMediaEntities(luisResult);
-            //console.log("risultato: " + res.Media + " " + res.Generi[0]);
+            console.log("risultato: " + res.Media + " " + res.Generi[0]);
+            /*const res = {
+                Media: 'film',
+                Generi: [
+                    'crime'
+                ]
+            }*/
             switch (res.Media) {
                 case 'film': {
 
@@ -847,10 +856,12 @@ class SearchDialog extends ComponentDialog {
     }
     
     async loopStep(step) {
-        if(step.result == undefined) {
-            return await step.replaceDialog(this.id);
-        } else {
-            return await step.endDialog();
+        if(step.result != undefined) {
+            if(step.result.res == "MAIN") {
+                return await step.endDialog({ res: "MAIN"});
+            } else if(step.result.res == "SEARCH") {
+                return await step.replaceDialog(this.id);
+            }
         }
     }
  }

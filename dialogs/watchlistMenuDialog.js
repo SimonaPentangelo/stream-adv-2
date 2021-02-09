@@ -17,21 +17,17 @@ const { ComponentDialog,
         WaterfallDialog 
 } = require('botbuilder-dialogs');
 
-/*
 const {
     WATCHLISTDELETE_DIALOG,
     WatchlistDeleteDialog
 } = require('./watchlistDeleteDialog');
- */
 
-/*
 const {
     WATCHLISTSHOW_DIALOG,
     WatchlistShowDialog
 } = require('./watchlistShowDialog');
- */
 
-const WATCHLISTMENU_DIALOG = 'MAIN_DIALOG';
+const WATCHLISTMENU_DIALOG = 'WATCHLISTMENU_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 
@@ -42,8 +38,8 @@ class WatchlistMenuDialog extends ComponentDialog {
         this.userProfileAccessor = userProfileAccessor;
 
         this.addDialog(new TextPrompt(TEXT_PROMPT));
-        //this.addDialog(new WatchlistDeleteDialog(this.userProfileAccessor));
-        //this.addDialog(new WatchlistShowDialog(this.userProfileAccessor));
+        this.addDialog(new WatchlistDeleteDialog(this.userProfileAccessor));
+        this.addDialog(new WatchlistShowDialog(this.userProfileAccessor));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.menuStep.bind(this),
             this.optionsStep.bind(this),
@@ -51,10 +47,7 @@ class WatchlistMenuDialog extends ComponentDialog {
         ]));
         this.initialDialogId = WATERFALL_DIALOG;
     }
-    /**
-     * The run method handles the incoming activity (in the form of a TurnContext) and passes it through the dialog system.
-     * If no dialog is active, it will start the default dialog.
-     */
+
     async run(turnContext, accessor) {
         const dialogSet = new DialogSet(accessor);
         dialogSet.add(this);
@@ -66,23 +59,22 @@ class WatchlistMenuDialog extends ComponentDialog {
     }
 
         async menuStep(step) {
-            console.log('PORCODIO');
                 const reply = {
                     type: ActivityTypes.Message
                 };
                 var buttons = [{
                         type: ActionTypes.ImBack,
-                        title: 'Guarda la tua watchlist.',
+                        title: 'Guarda la tua watchlist',
                         value: 'watchlist'
                     },
                     {
                         type: ActionTypes.ImBack,
-                        title: 'Cancella un elemento dalla lista.',
+                        title: 'Cancella un elemento dalla lista',
                         value: 'delete'
                     },
                     {
                         type: ActionTypes.ImBack,
-                        title: 'Torna indietro.',
+                        title: 'Torna indietro',
                         value: 'back'
                     }
                     
@@ -111,11 +103,12 @@ class WatchlistMenuDialog extends ComponentDialog {
         // Call LUIS and gather user request.
         //const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
         if (option === 'watchlist' /*|| LuisRecognizer.topIntent(luisResult) === 'search'*/) {
-            //return await step.beginDialog(WATCHLISTSHOW_DIALOG);    
+            console.log("CIAONE");
+            return await step.beginDialog(WATCHLISTSHOW_DIALOG);    
         } else if (option === 'delete' /*|| LuisRecognizer.topIntent(luisResult) === 'login'*/) {
-            //return await step.beginDialog(WATCHLISTDELETE_DIALOG);    
+            return await step.beginDialog(WATCHLISTDELETE_DIALOG);    
         } else if(option === 'back' /*|| LuisRecognizer.topIntent(luisResult) === 'watchlist'*/) {
-            return await step.endDialog({ res : -1 });
+            return await step.endDialog({ res : "WATCHLIST" });
         } else {
             // The user did not enter input that this bot was built to handle.
             reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';

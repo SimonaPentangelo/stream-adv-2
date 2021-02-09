@@ -30,7 +30,6 @@ const RESULT_DIALOG = 'RESULT_DIALOG';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
 var info = [];
-var result = [];
 var count = 0;
 var type;
 
@@ -73,7 +72,7 @@ class ResultDialog extends ComponentDialog {
             count++;
         } 
         console.log("CIAO");
-    
+        console.log(info);
         var buttons = [];
         var i = 0;
 
@@ -84,8 +83,8 @@ class ResultDialog extends ComponentDialog {
         while(info[i]) {
             buttons.push({
                 type: ActionTypes.ImBack,
-                title: info[i],
-                value: info[i]
+                title: info[i].name,
+                value: info[i].name
             });
 
             if(i == 5) {
@@ -118,15 +117,16 @@ class ResultDialog extends ComponentDialog {
         //const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
         if (option === 'search' /*|| LuisRecognizer.topIntent(luisResult) === 'search'*/) {
             count = 0;
-            return await step.endDialog();
+            return await step.endDialog({ res: "SEARCH" });
         } else if(option === 'menu' /*|| LuisRecognizer.topIntent(luisResult) === 'menu'*/) { 
             count = 0;
-            return await step.endDialog({ res : 1 });
+            return await step.endDialog({ res: "MAIN" });
         } else {
             var i = 0;
             while(true) {
-                if(info[i] === option) {
-                   return await step.beginDialog(BING_DIALOG, { media: type, title : option }); 
+                if(info[i].name === option) {
+                    console.log(info[i].id);
+                   return await step.beginDialog(BING_DIALOG, { media: type, title : option, id: info[i].id }); 
                 } else {
                     i++;
                     if(i == 6) {
@@ -145,10 +145,18 @@ class ResultDialog extends ComponentDialog {
     }
 
     async endStep(step) {
-        if(step.result.res == -1) {
-            return await step.endDialog();
-        } else {
-            return await step.replaceDialog(this.id);
+        console.log(step.result);
+        if(step.result != undefined) {
+            if(step.result.res == "MAIN") {
+                count = 0;
+                return await step.endDialog({ res: "MAIN" });
+            } else if(step.result.res == "SEARCH") {
+                count = 0;
+                return await step.endDialog({ res: "SEARCH" });
+            } else if(step.result.res == "RESULT") {
+                count++;
+                return await step.replaceDialog(this.id);
+            }
         }
     }
  }

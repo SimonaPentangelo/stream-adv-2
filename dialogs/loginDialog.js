@@ -76,7 +76,7 @@ class LoginDialog extends ComponentDialog {
         } else {
             await step.context.sendActivity('Il login non è andato a buon fine.');
         }
-        return await step.endDialog({ res : prompt });
+        return await step.endDialog({ res : "LOGIN", login : prompt });
     }
 }
 module.exports.LoginDialog = LoginDialog;
