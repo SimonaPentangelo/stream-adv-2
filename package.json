@@ -4,8 +4,7 @@
     "description": "A bot that demonstrates core AI capabilities",
     "author": "Microsoft",
     "license": "MIT",
-    "main": "index.js",
-    "debug.node.autoAttach": "on",
+    "main": "index.js"
     "scripts": {
         "start": "node ./index.js",
         "watch": "nodemon ./index.js",
