@@ -75,6 +75,8 @@ class WelcomeDialog extends ComponentDialog {
         const message = step.result;
         if (message === 'menu') {
             return await step.beginDialog(MAIN_DIALOG);
+        } else {
+            return await step.replaceDialog(this.id);
         }
     }
 }
