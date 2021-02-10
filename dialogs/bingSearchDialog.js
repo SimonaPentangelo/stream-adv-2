@@ -156,7 +156,7 @@ class BingDialog extends ComponentDialog {
             streaming = await this.getStreaming();
             count++;
         }
-        var card = {
+        /*var card = {
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
             "type": "AdaptiveCard",
             "version": "1.0",
@@ -223,26 +223,57 @@ class BingDialog extends ComponentDialog {
                     "data": "back"
                 }
             ]
-        }
+        }*/
 
-        var adptvCard = CardFactory.adaptiveCard(card);
+        var imgCard = CardFactory.heroCard(CardFactory.images([image]));
 
-        const messageText = 'Seleziona un\'opzione.';
-        const promptMessage = MessageFactory.text(messageText, messageText, InputHints.ExpectingInput);
+        var buttons = [{
+            type: ActionTypes.ImBack,
+            title: 'Aggiungi alla watchlist',
+            value: 'add'
+            },{
+                type: ActionTypes.ImBack,
+                title: 'Fai una nuova ricerca',
+                value: 'search'
+            }, {
+                type: ActionTypes.ImBack,
+                title: 'Torna indietro',
+                value: 'back'
+            }
+        ];
 
-        await step.context.sendActivity({
+        const card = CardFactory.heroCard(
+            '',
+            image,
+            buttons, {
+                text: 'Ecco il risultato:'
+            }
+        );
+        reply.attachments = [card];
+        await step.context.sendActivity(reply);
+        return await step.prompt(TEXT_PROMPT, {
+            prompt: 'Seleziona un\'opzione dal menu per proseguire!'
+        });
+
+        //var adptvCard = CardFactory.adaptiveCard(card);
+
+        //const messageText = 'Seleziona un\'opzione.';
+        //const promptMessage = MessageFactory.text(messageText, messageText, InputHints.ExpectingInput);
+
+        /*await step.context.sendActivity({
             text: "Ecco il risultato:",
             attachments: [adptvCard]
         });
 
-        return await step.prompt(TEXT_PROMPT, promptMessage);
+        return await step.prompt(TEXT_PROMPT, promptMessage);*/
     }  
 
     async branchStep(step) {
         const reply = {
             type: ActivityTypes.Message
         };
-        const option = JSON.stringify(step.context.activity.text);
+        //const option = JSON.stringify(step.context.activity.text);
+        const option = step.result;
         if (option === "\"search\"") {
             count = 0;
             console.log("search");
