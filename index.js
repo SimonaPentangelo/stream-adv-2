@@ -16,9 +16,6 @@ const restify = require('restify');
 // See https://aka.ms/bot-services to learn more about the different parts of a bot.
 const { BotFrameworkAdapter, ConversationState, InputHints, MemoryStorage, UserState } = require('botbuilder');
 
-const telegramKey = process.env.TelegramKey;
-const webhook = process.env.WebhookURL;
-
 const { StreamAdvLuis } = require('./luis/StreamAdvLuis');
 
 // This bot's main dialog.
@@ -82,11 +79,7 @@ const luisRecognizer = new StreamAdvLuis(luisConfig);
 const dialog = new WelcomeDialog(luisRecognizer, userState);
 //const bot = new DialogAndWelcomeBot(conversationState, userState, dialog);
 const bot = new DialogBot(conversationState, userState, dialog);  
-bot.telegram.setWebhook(webhook);
-bot.on('message', (ctx) => ctx.telegram.sendCopy
-      (ctx.chat.id, ctx.message))
-module.exports = async function (context, req) {  
-return bot.handleUpdate(req.body, context.res) }  
+  
 // Create HTTP server
 const server = restify.createServer();
 server.listen(process.env.port || process.env.PORT || 3978, function() {

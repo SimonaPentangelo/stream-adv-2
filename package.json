@@ -28,6 +28,7 @@
         "moment-timezone": "^0.5.32",
         "msal": "^1.4.4",
         "restify": "~8.5.1",
+        "telegraf": "^4.0.3",
         "trakt.tv": "^8.0.0"
     },
     "devDependencies": {
