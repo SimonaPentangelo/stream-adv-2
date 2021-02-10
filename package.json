@@ -5,6 +5,7 @@
     "author": "Microsoft",
     "license": "MIT",
     "main": "index.js",
+    "debug.node.autoAttach": "on",
     "scripts": {
         "start": "node ./index.js",
         "watch": "nodemon ./index.js",

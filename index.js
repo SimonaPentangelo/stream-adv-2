@@ -79,7 +79,10 @@ const luisRecognizer = new StreamAdvLuis(luisConfig);
 const dialog = new WelcomeDialog(luisRecognizer, userState);
 //const bot = new DialogAndWelcomeBot(conversationState, userState, dialog);
 const bot = new DialogBot(conversationState, userState, dialog);
-
+bot.on('message', msg => {
+    console.log("arrrived")
+    debugger //line added```  
+    
 // Create HTTP server
 const server = restify.createServer();
 server.listen(process.env.port || process.env.PORT || 3978, function() {
