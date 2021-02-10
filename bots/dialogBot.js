@@ -14,6 +14,7 @@ class DialogBot extends ActivityHandler {
         this.onMessage(async (context, next) => {
             await this.dialog.run(context, this.dialogState);
             // By calling next() you ensure that the next BotHandler is run.
+            console.log("MESSAGGIO DI LOG A CASO");
             await next();
         });
         this.onMembersAdded(async (context, next) => {
