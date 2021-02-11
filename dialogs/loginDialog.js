@@ -1,6 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-
 require('dotenv').config({ path: 'C:\Users\Simona\Desktop\stream-adv\.env' });
 const { OAuthHelpers } = require('../helpers/OAuthHelpers');
 
