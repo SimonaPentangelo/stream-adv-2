@@ -7,10 +7,9 @@ var request = require("request");
 
 // Import required types from libraries
 const {
-    MessageFactory,
     ActivityTypes,
     CardFactory,
-    InputHints
+    ActionTypes
 } = require('botbuilder');
 
 
@@ -86,9 +85,10 @@ class BingDialog extends ComponentDialog {
             }
             request(info, function(error, response, body){
                 var searchResponse = JSON.parse(body);
+                console.log(searchResponse);
                 var i = 0;
                 while(i < searchResponse.webPages.value.length) {
-                    if(searchResponse.webPages.value[i].displayUrl.includes(idFound) && searchResponse.webPages.value[i].displayUrl.includes(type) && !searchResponse.webPages.value[i].displayUrl.includes("season")) {
+                    if(searchResponse.webPages.value[i].displayUrl.includes(idFound) && searchResponse.webPages.value[i].displayUrl.includes(type) && !searchResponse.webPages.value[i].displayUrl.includes("season") && !searchResponse.webPages.value[i].displayUrl.includes("discuss")) {
                         webPage = searchResponse.webPages.value[i];
                         break;
                     } else {
@@ -114,9 +114,11 @@ class BingDialog extends ComponentDialog {
                 var s = JSON.parse(body);
                 if(s.results == undefined || s.results.IT == undefined || s.results.IT.flatrate == undefined) {
                     streaming = "Streaming non disponibile.";
+                    console.log(streaming);
                 } else if(s.results.IT != undefined){
                     var i = 0;
                     var str = "";
+                    console.log("SONO PRIMA DEL WHILE");
                     while(s.results.IT.flatrate[i] != undefined) {
                         if(i != 0) {
                             str = str.concat(", ");
@@ -125,6 +127,7 @@ class BingDialog extends ComponentDialog {
                         i++;
                     }
                     streaming = "In streaming su: " + str;
+                    console.log(streaming);
                 }
                 resolve(streaming);
             });
@@ -139,6 +142,7 @@ class BingDialog extends ComponentDialog {
             result = step.options.title;
             type = step.options.media;
             idFound = step.options.id;
+            console.log(idFound + " " + type + " " + result);
             var webPage = await this.getMedia();
             url = webPage.url;
             console.log("URL: " + url);
@@ -156,116 +160,38 @@ class BingDialog extends ComponentDialog {
             streaming = await this.getStreaming();
             count++;
         }
-        /*var card = {
-            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-            "type": "AdaptiveCard",
-            "version": "1.0",
-            "body": [
-                {
-                    "type": "ColumnSet",
-                    "columns": [
-                        {
-                            "type": "Column",
-                            "width": 1,
-                            "items": [
-                                {
-                                    "type": "Image",
-                                    "url": image,
-                                    "size": "auto",
-                                    "horizontalAlignment": "Right"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "Column",
-                            "width": 2,
-                            "items": [
-                                {
-                                    "type": "TextBlock",
-                                    "text": "" + result,
-                                    "weight": "Bolder",
-                                    "size": "Medium"
-                                },
-                                {
-                                    "type": "TextBlock",
-                                    "text": "" + snippet,
-                                    "isSubtle": true,
-                                    "wrap": true
-                                },
-                                {
-                                    "type": "TextBlock",
-                                    "text": "" + streaming,
-                                    "isSubtle": true,
-                                    "wrap": true,
-                                    "size": "Small",
-                                    "weight": "Bolder"
-                                }
-                            ],
-                            "horizontalAlignment": "Right"
-                        }
-                    ]
-                }
-            ],
-            "actions": [
-                {
-                    "type": "Action.Submit",
-                    "title": "Aggiungi alla watchlist",
-                    "data": "add"
-                },
-                {
-                    "type": "Action.Submit",
-                    "title": "Fai una nuova ricerca",
-                    "data": "search"
-                },
-                {
-                    "type": "Action.Submit",
-                    "title": "Torna indietro",
-                    "data": "back"
-                }
-            ]
-        }*/
-
-        var imgCard = CardFactory.heroCard(CardFactory.images([image]));
 
         var buttons = [{
             type: ActionTypes.ImBack,
             title: 'Aggiungi alla watchlist',
             value: 'add'
-            },{
+            },{},{
                 type: ActionTypes.ImBack,
-                title: 'Fai una nuova ricerca',
+                title: 'Nuova ricerca',
                 value: 'search'
-            }, {
+            },{},{
                 type: ActionTypes.ImBack,
                 title: 'Torna indietro',
                 value: 'back'
             }
         ];
 
+        const coso = '📌';
+        const tele = '📺';
+        const pen = '🖊️';
         const card = CardFactory.heroCard(
-            '',
-            image,
+            coso + ' ' + result,
+            [image],
             buttons, {
-                text: 'Ecco il risultato:'
+                text: pen + ' ' + 'Trama: ' + snippet + '\n\n' + tele + ' ' + streaming
             }
         );
+    
         reply.attachments = [card];
         await step.context.sendActivity(reply);
         return await step.prompt(TEXT_PROMPT, {
             prompt: 'Seleziona un\'opzione dal menu per proseguire!'
         });
-
-        //var adptvCard = CardFactory.adaptiveCard(card);
-
-        //const messageText = 'Seleziona un\'opzione.';
-        //const promptMessage = MessageFactory.text(messageText, messageText, InputHints.ExpectingInput);
-
-        /*await step.context.sendActivity({
-            text: "Ecco il risultato:",
-            attachments: [adptvCard]
-        });
-
-        return await step.prompt(TEXT_PROMPT, promptMessage);*/
     }  
 
     async branchStep(step) {
@@ -274,11 +200,12 @@ class BingDialog extends ComponentDialog {
         };
         //const option = JSON.stringify(step.context.activity.text);
         const option = step.result;
-        if (option === "\"search\"") {
+        console.log("AAAAAAAIUTO " + option);
+        if (option === "search") {
             count = 0;
             console.log("search");
             return await step.endDialog({ res : "SEARCH" });
-        } else if (option === "\"add\"") {
+        } else if (option === "add") {
                 var m = {
                     "id_tmdb": id,
                     "title": result,
@@ -289,7 +216,7 @@ class BingDialog extends ComponentDialog {
                 }
                 console.log("SEARCH " + JSON.stringify(m));
                 return await step.beginDialog(WATCHLISTADD_DIALOG, { media : m });   
-        } else if(option === "\"back\"") {
+        } else if(option === "back") {
             count = 0;
             console.log("result");
             return await step.endDialog({ res : "RESULT" });

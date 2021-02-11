@@ -86,32 +86,38 @@ class MainDialog extends ComponentDialog {
                 const reply = {
                     type: ActivityTypes.Message
                 };
-                var buttons = [{
-                        type: ActionTypes.ImBack,
-                        title: 'Chiedimi di fare una ricerca per te',
-                        value: 'search'
-                    }
-                ];
+                var buttons = [];
 
                 console.log("PROFILE: " + userProfile);
                 if(userProfile == undefined) {
-                    buttons.push({
+                    buttons = [{
                         type: ActionTypes.ImBack,
-                        title: 'Effettua il login',
-                        value: 'login'
-                    });
+                        title: 'Ricerca',
+                        value: 'search'
+                        }, {},
+                        {
+                            type: ActionTypes.ImBack,
+                            title: 'Login',
+                            value: 'login'
+                        }
+                    ];
                 } else {
-                    buttons.push({
+                    buttons = [{
                         type: ActionTypes.ImBack,
-                        title: 'Gestisci watchlist',
-                        value: 'manage'
-                    });
-
-                    buttons.push({
-                        type: ActionTypes.ImBack,
-                        title: 'Logout',
-                        value: 'logout'
-                    });
+                        title: 'Ricerca',
+                        value: 'search'
+                        }, {},
+                        {
+                            type: ActionTypes.ImBack,
+                            title: 'Watchlist',
+                            value: 'manage'
+                        }, {},
+                        {
+                            type: ActionTypes.ImBack,
+                            title: 'Logout',
+                            value: 'logout'
+                        }
+                    ];
                 }
                 const card = CardFactory.heroCard(
                     '',

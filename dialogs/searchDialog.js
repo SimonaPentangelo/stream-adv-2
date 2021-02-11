@@ -373,7 +373,7 @@ class SearchDialog extends ComponentDialog {
                                 break; }
                             case "horror": { 
                                 if(countG != 0) {
-                                    stringaGeneri.push(",");
+                                    stringaGeneri = stringaGeneri.concat(",");
                                 }
                                 countG++;
                                 var j = 0;
@@ -521,6 +521,11 @@ class SearchDialog extends ComponentDialog {
                     console.log("CHIAVI: " + stringaChiavi);
                     console.log("GENERI: " + stringaGeneri);
                     var reqQuery;
+                    if(stringaChiavi.length == 0 && stringaGeneri == 0) {
+                        reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';
+                    await step.context.sendActivity(reply)
+                        return await step.replaceDialog(this.id);
+                    }
 
                     if(stringaChiavi == "") {
                         reqQuery = "https://api.themoviedb.org/3/discover/movie?api_key=" + KEY_TMDB + "&language=it-IT&with_genres=" + stringaGeneri + "&page=1";
@@ -835,6 +840,12 @@ class SearchDialog extends ComponentDialog {
                     console.log("GENERI: " + stringaGeneri);
                     var reqQuery;
 
+                    if(stringaChiavi.length == 0 && stringaGeneri == 0) {
+                        reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';
+                    await step.context.sendActivity(reply)
+                        return await step.replaceDialog(this.id);
+                    }
+                    
                     if(stringaChiavi == "") {
                         reqQuery = "https://api.themoviedb.org/3/discover/tv?api_key=" + KEY_TMDB + "&language=it-IT&with_genres=" + stringaGeneri + "&page=1";
                     } else if(stringaGeneri == "") {

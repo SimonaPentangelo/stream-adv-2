@@ -15,8 +15,6 @@ const {
     ActionTypes,
     ActivityTypes,
     CardFactory,
-    MessageFactory,
-    InputHints
 } = require('botbuilder');
 
 const { ComponentDialog, 
@@ -139,76 +137,31 @@ class WatchlistShowDialog extends ComponentDialog {
             var i = 0;
             while(i < rM.length) {
                 if(rM[i].title === option) {
-                    var card = {
-                        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-                        "type": "AdaptiveCard",
-                        "version": "1.0",
-                        "body": [
-                            {
-                                "type": "ColumnSet",
-                                "columns": [
-                                    {
-                                        "type": "Column",
-                                        "width": 1,
-                                        "items": [
-                                            {
-                                                "type": "Image",
-                                                "url": rM[i].image,
-                                                "size": "auto",
-                                                "horizontalAlignment": "Right"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "type": "Column",
-                                        "width": 2,
-                                        "items": [
-                                            {
-                                                "type": "TextBlock",
-                                                "text": "" + rM[i].title,
-                                                "weight": "Bolder",
-                                                "size": "Medium"
-                                            },
-                                            {
-                                                "type": "TextBlock",
-                                                "text": "" + rM[i].snippet,
-                                                "isSubtle": true,
-                                                "wrap": true
-                                            },
-                                            {
-                                                "type": "TextBlock",
-                                                "text": "" + rM[i].streaming,
-                                                "isSubtle": true,
-                                                "wrap": true,
-                                                "size": "Small",
-                                                "weight": "Bolder"
-                                            }
-                                        ],
-                                        "horizontalAlignment": "Right"
-                                    }
-                                ]
-                            }
-                        ],
-                        "actions": [
-                            {
-                                "type": "Action.Submit",
-                                "title": "Torna indietro",
-                                "data": "back"
-                            }
-                        ]
-                    }
-            
-                    var adptvCard = CardFactory.adaptiveCard(card);
-            
-                    const messageText = 'Clicca su "back" per tornare alla tua watchlist.';
-                    const promptMessage = MessageFactory.text(messageText, messageText, InputHints.ExpectingInput);
-            
-                    await step.context.sendActivity({
-                        text: "Ecco il risultato:",
-                        attachments: [adptvCard]
-                    });
+                            
+        var buttons = [{
+                type: ActionTypes.ImBack,
+                title: 'Torna indietro',
+                value: 'back'
+            }
+        ];
 
-                    return await step.prompt(TEXT_PROMPT, promptMessage);
+        const coso = '📌';
+        const tele = '📺';
+        const pen = '🖊️';
+
+                const card = CardFactory.heroCard(
+                    coso + ' ' + rM[i].title,
+                    [rM[i].image],
+                    buttons, {
+                        text:pen + ' ' + 'Trama: ' + rM[i].snippet + '\n\n' + tele + ' ' + rM[i].streaming
+                    }
+                );
+    
+                reply.attachments = [card];
+                await step.context.sendActivity(reply);
+                return await step.prompt(TEXT_PROMPT, {
+                prompt: 'Ecco il risultato!'
+                    });
                 } else {
                     i++;
                 }

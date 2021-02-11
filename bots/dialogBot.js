@@ -14,14 +14,12 @@ class DialogBot extends ActivityHandler {
         this.onMessage(async (context, next) => {
             await this.dialog.run(context, this.dialogState);
             // By calling next() you ensure that the next BotHandler is run.
-            console.log("MESSAGGIO DI LOG A CASO");
             await next();
         });
         this.onMembersAdded(async (context, next) => {
             const membersAdded = context.activity.membersAdded;
             for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
                 if (membersAdded[cnt].id !== context.activity.recipient.id) {
-                    await context.sendActivity('Ciao, sono il tuo StreamAdvisor!');
                     await this.dialog.run(context, conversationState.createProperty('DialogState'));
                 }
             }

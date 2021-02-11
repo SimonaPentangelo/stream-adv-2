@@ -66,14 +66,22 @@ class WelcomeDialog extends ComponentDialog {
             await step.context.sendActivity(messageText, null, InputHints.IgnoringInput);
             return await step.next();
         }
-        const messageText = step.options.restartMsg ? step.options.restartMsg : `Come posso aiutarti?\n\nSe vuoi sapere cosa posso fare per te scrivi "menu"`;
+        const uno = '🎥';
+        const due = '🎞️';
+        await step.context.sendActivity(uno + ' **Ciao, sono il tuo StreamAdvisor!** ' + due);
+        var testo = "🔎 Con la funzionalità **ricerca** potrai trovare nuovi film e serie tv da vedere." +
+            "\n\n📼 Ti indicherò le piattaforme di streaming da cui guardarle." +
+            "\n\n📜 Se effettuerai il **login**, potrai salvare i media che preferisci in una **watchlist**." +
+            "\n\n👁️ Potrai consultare e aggiornare la lista quando preferisci!"
+        await step.context.sendActivity(testo);
+        const messageText = step.options.restartMsg ? step.options.restartMsg : `Cosa aspetti?\n\nScrivi "**menu**" per iniziare!`;
         const promptMessage = MessageFactory.text(messageText, messageText, InputHints.ExpectingInput);
         return await step.prompt(TEXT_PROMPT, { prompt: promptMessage });
     }
 
     async endStep(step) {
         const message = step.result;
-        if (message === 'menu') {
+        if (message === 'menu' || message === 'Menu' || option == "MENU") {
             return await step.beginDialog(MAIN_DIALOG);
         } else {
             return await step.replaceDialog(this.id);

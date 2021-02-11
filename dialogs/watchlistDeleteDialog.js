@@ -130,7 +130,7 @@ class WatchlistDeleteDialog extends ComponentDialog {
         reply.attachments = [card];
         await step.context.sendActivity(reply);
         return await step.prompt(TEXT_PROMPT, {
-            prompt: 'Scrivi "back" per tornare indietro o clicca su uno dei titoli per cancellarlo.'
+            prompt: 'Scrivi "**back**" per tornare indietro o clicca su uno dei titoli per cancellarlo.'
         });
     }
 
@@ -173,7 +173,7 @@ class WatchlistDeleteDialog extends ComponentDialog {
                         return await step.endDialog({ res : "DELETE" });
                     }
                     return await step.prompt(TEXT_PROMPT, {
-                        prompt: 'Vuoi cancellare altri elementi? (Sì/No)'
+                        prompt: 'Vuoi cancellare altri elementi? (**Sì**/**No**)'
                     });
                 } else {
                     i++;

@@ -72,9 +72,9 @@ class LoginDialog extends ComponentDialog {
             userProfile.name = nome;
             userProfile.email = email;
             await this.userProfileAccessor.set(step.context, userProfile);
-            await step.context.sendActivity('Il login è andato a buon fine.');
+            await step.context.sendActivity('**Il login è andato a buon fine.**');
         } else {
-            await step.context.sendActivity('Il login non è andato a buon fine.');
+            await step.context.sendActivity('**Il login non è andato a buon fine.**');
         }
         return await step.endDialog({ res : "LOGIN", login : prompt });
     }

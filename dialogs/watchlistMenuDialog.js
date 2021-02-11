@@ -64,12 +64,12 @@ class WatchlistMenuDialog extends ComponentDialog {
                 };
                 var buttons = [{
                         type: ActionTypes.ImBack,
-                        title: 'Guarda la tua watchlist',
+                        title: 'La tua watchlist',
                         value: 'watchlist'
                     },
                     {
                         type: ActionTypes.ImBack,
-                        title: 'Cancella un elemento dalla lista',
+                        title: 'Cancella un elemento',
                         value: 'delete'
                     },
                     {

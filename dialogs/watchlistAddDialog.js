@@ -130,14 +130,14 @@ class WatchlistAddDialog extends ComponentDialog {
 
             const { resource: createdUser } = await user.items.create(u);
 
-            await step.context.sendActivity('Watchlist aggiornata con successo.');
+            await step.context.sendActivity('**Watchlist aggiornata con successo.**');
             return await step.beginDialog(WATCHLISTMENU_DIALOG);
         } else {
 
             var i = 0;
             while(i < resultUser[0].watchlist.length) {
                 if(m.id_tmdb == resultUser[0].watchlist[i]) {
-                    await step.context.sendActivity('Media già presente nella watchlist.');
+                    await step.context.sendActivity('**Media già presente nella watchlist.**');
                     return await step.endDialog({ res : "RESULT" });
                 }
                 i++;
@@ -155,7 +155,7 @@ class WatchlistAddDialog extends ComponentDialog {
 
                 resultUser[0].watchlist.push(m.id_tmdb);
                 const { resource : updatedUser } = await user.items.upsert(resultUser[0]);
-                await step.context.sendActivity('Watchlist aggiornata con successo.');
+                await step.context.sendActivity('**Watchlist aggiornata con successo.**');
                 return await step.beginDialog(WATCHLISTMENU_DIALOG);
             }
         }
@@ -176,10 +176,10 @@ class WatchlistAddDialog extends ComponentDialog {
 
                 u.watchlist.push(adding);
                 const { resource : updatedUser } = await user.items.upsert(u);
-                await step.context.sendActivity('Watchlist aggiornata con successo.');
+                await step.context.sendActivity('**Watchlist aggiornata con successo.**');
                 return await step.endDialog({ res : "RESULT" });
             } else if(step.result.res == "NOTDELETE") {
-                await step.context.sendActivity('La watchlist non è stata modificata.');
+                await step.context.sendActivity('**La watchlist non è stata modificata.**');
                 return await step.endDialog({ res : "RESULT" });
             }
         }
