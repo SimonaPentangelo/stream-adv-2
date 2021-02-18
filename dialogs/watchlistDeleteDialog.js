@@ -5,6 +5,8 @@ require('dotenv').config({
     path: ENV_FILE
 });
 
+const { LuisRecognizer } = require('botbuilder-ai');
+
 const CosmosClient = require("@azure/cosmos").CosmosClient;
 const endpoint = process.env.CosmosDBEndpoint;
 const key = process.env.CosmosDBKey;
@@ -24,10 +26,16 @@ const { ComponentDialog,
         TextPrompt
 } = require('botbuilder-dialogs');
 
+const {
+    DELETEALL_DIALOG,
+    DeleteAllDialog
+} = require('./deleteAllDialog');
 
 const WATCHLISTDELETE_DIALOG = 'WATCHLISTDELETE_DIALOG';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
+var flag;
+var flagAll;
 var userRes;
 var rM;
 
@@ -36,11 +44,13 @@ const user = database.container('User');
 const media = database.container('Media');
 
 class WatchlistDeleteDialog extends ComponentDialog {
-    constructor(userProfileAccessor) {
+    constructor(luisRecognizer, userProfileAccessor) {
         super(WATCHLISTDELETE_DIALOG);
 
         this.userProfileAccessor = userProfileAccessor
+        this.luisRecognizer = luisRecognizer;
         this.addDialog(new TextPrompt(TEXT_PROMPT));
+        this.addDialog(new DeleteAllDialog(this.userProfileAccessor));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.listStep.bind(this),
             this.deleteStep.bind(this),
@@ -63,6 +73,7 @@ class WatchlistDeleteDialog extends ComponentDialog {
 
     async listStep(step) {
         if(step.options.user == undefined) {
+        flag = false;
         let userProfile = await this.userProfileAccessor.get(step.context);
          //controllo se l'utente è nel db
         const queryUser = {
@@ -79,12 +90,13 @@ class WatchlistDeleteDialog extends ComponentDialog {
         console.log(userRes);
         console.log(userRes.watchlist);
         } else {
+            flag = true;
             userRes = step.options.user;
             console.log(userRes);
         } 
 
         if(userRes.watchlist.length == 0) {
-            await step.context.sendActivity('Non hai elementi nella watchlist!');
+            await step.context.sendActivity('**Non hai elementi nella watchlist!**');
             return await step.endDialog({ res : "NOTDELETE" });
         }
         var queryMedia = { query: "", parameters: [] };
@@ -116,6 +128,10 @@ class WatchlistDeleteDialog extends ComponentDialog {
                 title: resultMedia[j].title,
                 value: resultMedia[j].title
             });
+
+            if(j + 1 != resultMedia.length) {
+                buttons.push({});
+            }
             j++;
         }
 
@@ -130,7 +146,7 @@ class WatchlistDeleteDialog extends ComponentDialog {
         reply.attachments = [card];
         await step.context.sendActivity(reply);
         return await step.prompt(TEXT_PROMPT, {
-            prompt: 'Scrivi "**back**" per tornare indietro o clicca su uno dei titoli per cancellarlo.'
+            prompt: 'Clicca su uno dei titoli per cancellarlo o scrivimi cos\' altro vorresti fare.'
         });
     }
 
@@ -139,9 +155,50 @@ class WatchlistDeleteDialog extends ComponentDialog {
             type: ActivityTypes.Message
         };
         const option = step.result;
+        const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
         console.log(option);
-        if(option === 'back' /*|| LuisRecognizer.topIntent(luisResult) === 'watchlist'*/) {
+        if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'SearchAdvanced') {
+            reply.text = '**Per fare una ricerca devi tornare al menu principale!**';
+            await step.context.sendActivity(reply);
+            return await step.endDialog({ res : "MAIN", login: login }); 
+        } else if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'LoginAction') {
+            reply.text = '**Hai già effettuato il login.**';
+            await step.context.sendActivity(reply); 
+            return await step.replaceDialog(this.id);
+        } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'LogoutAction') {
+            reply.text = '**Per fare il logout devi tornare al menu principale!**';
+            await step.context.sendActivity(reply);
+            return await step.endDialog({ res : "MAIN", login: login }); 
+        } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'DeleteAll') {
+            flagAll = true;
+            return await step.beginDialog(DELETEALL_DIALOG, { user:userRes, login:login }); 
+        } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistShow') {
+            if(flag) {
+                reply.text = '**Se vuoi vedere la tua watchlist, devi tornare al menu per la watchlist!**';
+                await step.context.sendActivity(reply);
+                return await step.endDialog({ res : "MAIN", login: login });
+            } else {
+                reply.text = '**Se vuoi vedere la tua watchlist, devi tornare al menu per la watchlist!**';
+                await step.context.sendActivity(reply);
+                return await step.endDialog({ res : "BACK", login: login });
+            }
+        } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistAdd' ) {
+            if(flag) {
+                reply.text = '**Devi prima cancellare un elemento!**';
+                await step.context.sendActivity(reply);
+                return await step.replaceDialog(this.id);
+            } else {
+                reply.text = '**Se vuoi aggiungere un elemento alla lista, devi prima fare una ricerca!**';
+                await step.context.sendActivity(reply);
+                return await step.endDialog({ res : "MAIN", login: login });
+            }
+        } else if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistDelete' ) {
+            
+             
+        } else if(option === 'back' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Back' ) {
             return await step.endDialog({ res : "NOTDELETE" });
+        } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Menu' ) {
+            return await step.endDialog({ res : "MAIN", login: login }); 
         } else {
             var i = 0;
             while(i < rM.length) {
@@ -190,17 +247,22 @@ class WatchlistDeleteDialog extends ComponentDialog {
         const reply = {
             type: ActivityTypes.Message
         };
-        const option = step.result;
-        console.log(option);
-        if(option === 'Sì' || option === "s" || option === "S" || option === "sì" || option === "si" || option === "SI" || option === "Si" /*|| LuisRecognizer.topIntent(luisResult) === 'watchlist'*/) {
-            return await step.replaceDialog(this.id);
-        } else if(option === 'No' || option === "n" || option === "N" || option === "no" || option === "NO") {
-            return await step.endDialog({ res : "DELETE" });
-        } 
+        if(flagAll) {
+            return await step.endDialog({ res: "DELETE", login:login });
+        } else {
+            const option = step.result;
+            console.log(option);
+            if(option === 'Sì' || option === "s" || option === "S" || option === "sì" || option === "si" || option === "SI" || option === "Si" /*|| LuisRecognizer.topIntent(luisResult) === 'watchlist'*/) {
+                return await step.replaceDialog(this.id);
+            } else if(option === 'No' || option === "n" || option === "N" || option === "no" || option === "NO") {
+                flagAll = false;
+                return await step.endDialog({ res : "DELETE", login:login });
+            } 
 
-        reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';
-        await step.context.sendActivity(reply);
-        return await step.replaceDialog(this.id);
+            reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';
+            await step.context.sendActivity(reply);
+            return await step.replaceDialog(this.id);
+        }
     }
 
 }

@@ -3,6 +3,8 @@
 
 require('dotenv').config({ path: 'C:\Users\Simona\Desktop\stream-adv\.env' });
 
+const { LuisRecognizer } = require('botbuilder-ai');
+
 var request = require("request");
 
 // Import required types from libraries
@@ -40,12 +42,13 @@ const KEY_TMDB = process.env.TheMovieDBAPI;
 var count = 0;
 var type;
 var result;
-var url;
+var title;
 var image;
 var snippet;
 var streaming;
 var id;
 var idFound;
+var login;
 
 class BingDialog extends ComponentDialog {
     constructor(luisRecognizer, userProfileAccessor) {
@@ -54,7 +57,7 @@ class BingDialog extends ComponentDialog {
         this.luisRecognizer = luisRecognizer;
         this.userProfileAccessor = userProfileAccessor;
         this.addDialog(new TextPrompt(TEXT_PROMPT));
-        this.addDialog(new WatchlistAddDialog(userProfileAccessor));
+        this.addDialog(new WatchlistAddDialog(this.luisRecognizer, this.userProfileAccessor));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.searchStep.bind(this),
             this.branchStep.bind(this),
@@ -139,24 +142,15 @@ class BingDialog extends ComponentDialog {
             type: ActivityTypes.Message
         };
         if(count == 0) {
-            result = step.options.title;
-            type = step.options.media;
-            idFound = step.options.id;
-            console.log(idFound + " " + type + " " + result);
-            var webPage = await this.getMedia();
-            url = webPage.url;
-            console.log("URL: " + url);
-            id = idFound;
-            console.log(webPage.openGraphImage.contentUrl.substring(21));
-            if(webPage.openGraphImage.contentUrl.includes("bing")) {
-                var img = webPage.openGraphImage.contentUrl.substring(21);
-                image = "https://www.themoviedb.org/"
-                image = image.concat(img);
-            } else {
-                image = webPage.openGraphImage.contentUrl;
-            }
+
+            result = step.options.media;
+            idFound = result.id;
+            id = result.id;
+            title = result.name;
+            type = result.type;
+            image = result.image;
             console.log('IMMAGINE: ' + image);
-            snippet = webPage.snippet;
+            snippet = result.snippet;
             streaming = await this.getStreaming();
             count++;
         }
@@ -180,7 +174,7 @@ class BingDialog extends ComponentDialog {
         const tele = '📺';
         const pen = '🖊️';
         const card = CardFactory.heroCard(
-            coso + ' ' + result,
+            coso + ' ' + title,
             [image],
             buttons, {
                 text: pen + ' ' + 'Trama: ' + snippet + '\n\n' + tele + ' ' + streaming
@@ -200,30 +194,53 @@ class BingDialog extends ComponentDialog {
         };
         //const option = JSON.stringify(step.context.activity.text);
         const option = step.result;
-        console.log("AAAAAAAIUTO " + option);
-        if (option === "search") {
+        const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
+        console.log(option);
+        if (option === 'search' ||LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'SearchAdvanced') {
             count = 0;
             console.log("search");
-            return await step.endDialog({ res : "SEARCH" });
-        } else if (option === "add") {
-                var m = {
-                    "id_tmdb": id,
-                    "title": result,
-                    "type": type,
-                    "image": image,
-                    "snippet": snippet,
-                    "streaming": streaming
-                }
-                console.log("SEARCH " + JSON.stringify(m));
-                return await step.beginDialog(WATCHLISTADD_DIALOG, { media : m });   
-        } else if(option === "back") {
+            return await step.endDialog({ res : "SEARCH", login: login });
+        } else if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'LoginAction') {
+            count = 0;
+            reply.text = '**Devi tornare al menu principale per effettuare il login.**';
+            await step.context.sendActivity(reply); 
+            return await step.endDialog({ res : "MAIN", login: login });
+        } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'LogoutAction') {
+            count = 0;
+            reply.text = '**Per fare il logout devi tornare al menu principale!**';
+            await step.context.sendActivity(reply);
+            return await step.endDialog({ res : "MAIN", login: login }); 
+        } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'DeleteAll') {
+
+        } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistShow') {
+           
+        } else if(option === 'add' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistAdd' ) {
+            count = 0;
+            var m = {
+                "id_tmdb": id,
+                "title": title,
+                "type": type,
+                "image": image,
+                "snippet": snippet,
+                "streaming": streaming
+            }
+            console.log("SEARCH " + JSON.stringify(m));
+            return await step.beginDialog(WATCHLISTADD_DIALOG, { login: login, media : m });   
+        } else if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistDelete') {
+            count = 0;
+            reply.text = '**Se vuoi eliminare un elemento dalla lista, devi tornare al menu per la watchlist!**';
+            await step.context.sendActivity(reply);
+            return await step.endDialog({ res : "MAIN", login: login });  
+        } else if(option === 'back' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Back' ) {
             count = 0;
             console.log("result");
-            return await step.endDialog({ res : "RESULT" });
+            return await step.endDialog({ res : "RESULT", login: login });
+        } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Menu' ) {
+            count = 0;
+            return await step.endDialog({ res : "MAIN", login: login }); 
         } else {
-            // The user did not enter input that this bot was built to handle.
             reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';
-            await step.context.sendActivity(reply)
+            await step.context.sendActivity(reply);
         }
         return await step.replaceDialog(this.id);
     }
@@ -233,7 +250,7 @@ class BingDialog extends ComponentDialog {
         if(step.result != undefined) {
             if(step.result.res == "RESULT") {
                 count = 0;
-                return await step.endDialog({ res : "RESULT" });
+                return await step.endDialog({ res : "RESULT", login: login });
             }
         } else {
             return await step.replaceDialog(this.id);

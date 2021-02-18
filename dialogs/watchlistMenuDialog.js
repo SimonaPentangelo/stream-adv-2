@@ -3,6 +3,8 @@
 
 require('dotenv').config({ path: 'C:\Users\Simona\Desktop\stream-adv\.env' });
 
+const { LuisRecognizer } = require('botbuilder-ai');
+
 // Import required types from libraries
 const {
     ActionTypes,
@@ -27,20 +29,34 @@ const {
     WatchlistShowDialog
 } = require('./watchlistShowDialog');
 
+const {
+    LOGIN_DIALOG,
+    LoginDialog
+} = require('./loginDialog');
+
+const {
+    DELETEALL_DIALOG,
+    DeleteAllDialog
+} = require('./deleteAllDialog');
+
 const WATCHLISTMENU_DIALOG = 'WATCHLISTMENU_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
+var login;
 
 class WatchlistMenuDialog extends ComponentDialog {
-    constructor(userProfileAccessor) {
+    constructor(luisRecognizer, userProfileAccessor) {
         super(WATCHLISTMENU_DIALOG);
 
         this.userProfileAccessor = userProfileAccessor;
-
+        this.luisRecognizer = luisRecognizer;
         this.addDialog(new TextPrompt(TEXT_PROMPT));
-        this.addDialog(new WatchlistDeleteDialog(this.userProfileAccessor));
-        this.addDialog(new WatchlistShowDialog(this.userProfileAccessor));
+        this.addDialog(new LoginDialog(this.userProfileAccessor));
+        this.addDialog(new DeleteAllDialog(this.userProfileAccessor));
+        this.addDialog(new WatchlistDeleteDialog(this.luisRecognizer, this.userProfileAccessor));
+        this.addDialog(new WatchlistShowDialog(this.luisRecognizer, this.userProfileAccessor));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
+            this.checkStep.bind(this),
             this.menuStep.bind(this),
             this.optionsStep.bind(this),
             this.loopStep.bind(this)
@@ -58,20 +74,39 @@ class WatchlistMenuDialog extends ComponentDialog {
         }
     }
 
+    async checkStep(step) {
+        let userProfile = await this.userProfileAccessor.get(step.context);
+        if(userProfile == undefined && step.result == undefined) {
+            await step.context.sendActivity(`**Per gestire la tua watchlist, devi fare il login.**`); 
+            return await step.beginDialog(LOGIN_DIALOG); 
+        } else {
+            login = step.options.login;
+            return await step.next();
+        }
+    }
+
         async menuStep(step) {
+            if(step.result != undefined) {
+                login = step.result.login;
+            }
                 const reply = {
                     type: ActivityTypes.Message
                 };
                 var buttons = [{
                         type: ActionTypes.ImBack,
                         title: 'La tua watchlist',
-                        value: 'watchlist'
-                    },
+                        value: 'show'
+                    }, {},
                     {
                         type: ActionTypes.ImBack,
                         title: 'Cancella un elemento',
                         value: 'delete'
-                    },
+                    }, {},
+                    {
+                        type: ActionTypes.ImBack,
+                        title: 'Cancella tutta la lista',
+                        value: 'deleteAll'
+                    }, {},
                     {
                         type: ActionTypes.ImBack,
                         title: 'Torna indietro',
@@ -90,7 +125,7 @@ class WatchlistMenuDialog extends ComponentDialog {
                 reply.attachments = [card];
                 await step.context.sendActivity(reply);
                 return await step.prompt(TEXT_PROMPT, {
-                    prompt: 'Seleziona un\'opzione dal menu per proseguire!'
+                    prompt: 'Seleziona un\'opzione dal menu o dimmi cosa vorresti fare per proseguire!'
                 });
         }
 
@@ -100,25 +135,61 @@ class WatchlistMenuDialog extends ComponentDialog {
             type: ActivityTypes.Message
         };
         const option = step.result;
-        // Call LUIS and gather user request.
-        //const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
-        if (option === 'watchlist' /*|| LuisRecognizer.topIntent(luisResult) === 'search'*/) {
-            console.log("CIAONE");
-            return await step.beginDialog(WATCHLISTSHOW_DIALOG);    
-        } else if (option === 'delete' /*|| LuisRecognizer.topIntent(luisResult) === 'login'*/) {
-            return await step.beginDialog(WATCHLISTDELETE_DIALOG);    
-        } else if(option === 'back' /*|| LuisRecognizer.topIntent(luisResult) === 'watchlist'*/) {
-            return await step.endDialog({ res : "WATCHLIST" });
+        const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
+        console.log("WATCHLIST MENU");
+        console.log(luisResult);
+        if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'SearchAdvanced') {
+            reply.text = '**Per fare una ricerca devi tornare al menu principale!**';
+            await step.context.sendActivity(reply);
+            return await step.endDialog({ res : "MAIN", login: login }); 
+        } else if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'LoginAction') {
+            reply.text = '**Hai già effettuato il login.**';
+            await step.context.sendActivity(reply)    
+        } else if(option === 'logout' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'LogoutAction') {
+            reply.text = '**Per fare il logout devi tornare al menu principale!**';
+            await step.context.sendActivity(reply);
+            return await step.endDialog({ res : "MAIN", login: login }); 
+        } else if(option === 'deleteAll' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'DeleteAll') {
+            return await step.beginDialog(DELETEALL_DIALOG, { login:login }); 
+        } else if(option == "show" || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistShow') {
+            console.log("SONO NEL POSTO GIUSTO");
+            console.log(login);
+            return await step.beginDialog(WATCHLISTSHOW_DIALOG, { login: login });
+        } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistAdd' ) {
+            reply.text = '**Se vuoi aggiungere un elemento alla lista, devi prima fare una ricerca!**';
+            await step.context.sendActivity(reply);
+            return await step.endDialog({ res : "MAIN", login: login });
+        } else if (option === 'delete' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistDelete' ) {
+            return await step.beginDialog(WATCHLISTDELETE_DIALOG, { login:login });    
+        } else if(option === 'back' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Back' ) {
+            return await step.endDialog({ res : "BACK", login: login }); 
+        } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Menu' ) {
+            return await step.endDialog({ res : "MAIN", login: login }); 
         } else {
-            // The user did not enter input that this bot was built to handle.
-            reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';
-            await step.context.sendActivity(reply)
+            reply.text = '**Sembra che tu abbia digitato un comando che non conosco! Riprova.**';
+            await step.context.sendActivity(reply);
         }
         return await step.replaceDialog(this.id);
     }
 
     async loopStep(step) {
-        return await step.replaceDialog(this.id);
+        if(step.result != undefined) {
+            switch(step.result.res) {
+                case "MAIN": {
+                    login = step.result.login
+                    return await step.endDialog({ res : "MAIN", login: login }); 
+                }
+                case "WATCHLIST": {
+                    login = step.result.login;
+                    break;
+                }
+                case "BACK": {
+                    login = step.result.login
+                    break;
+                }
+            }
+            return await step.replaceDialog(this.id);
+        }
     }
 }
 module.exports.WatchlistMenuDialog = WatchlistMenuDialog;

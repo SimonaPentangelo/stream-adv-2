@@ -41,8 +41,7 @@ class WelcomeDialog extends ComponentDialog {
         this.addDialog(new TextPrompt(TEXT_PROMPT));
         this.addDialog(new MainDialog(this.luisRecognizer, this.userState));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
-            this.welcomeStep.bind(this),
-            this.endStep.bind(this)
+            this.welcomeStep.bind(this)
         ]));
         this.initialDialogId = WATERFALL_DIALOG;
     }
@@ -74,18 +73,7 @@ class WelcomeDialog extends ComponentDialog {
             "\n\n📜 Se effettuerai il **login**, potrai salvare i media che preferisci in una **watchlist**." +
             "\n\n👁️ Potrai consultare e aggiornare la lista quando preferisci!"
         await step.context.sendActivity(testo);
-        const messageText = step.options.restartMsg ? step.options.restartMsg : `Cosa aspetti?\n\nScrivi "**menu**" per iniziare!`;
-        const promptMessage = MessageFactory.text(messageText, messageText, InputHints.ExpectingInput);
-        return await step.prompt(TEXT_PROMPT, { prompt: promptMessage });
-    }
-
-    async endStep(step) {
-        const message = step.result;
-        if (message === 'menu' || message === 'Menu' || option == "MENU") {
-            return await step.beginDialog(MAIN_DIALOG);
-        } else {
-            return await step.replaceDialog(this.id);
-        }
+        return await step.beginDialog(MAIN_DIALOG);
     }
 }
 module.exports.WelcomeDialog = WelcomeDialog;

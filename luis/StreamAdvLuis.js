@@ -1,4 +1,5 @@
 const { LuisRecognizer } = require('botbuilder-ai');
+const { isRegExp } = require('util');
 
 class StreamAdvLuis {
     constructor(config) {
@@ -26,7 +27,13 @@ class StreamAdvLuis {
     getMediaEntities(result) {
         let film, serie;
         let genere = [];
-        let i = 0;       
+        let i = 0;   
+        console.log("LUIS");
+        console.log(result);  
+        if(result.entities.Genere == undefined) {
+            console.log("errore luis");
+            return { Media: undefined, Generi: undefined };
+        }  
         if(result.entities.Film) {
             while(result.entities.Genere[i]) {
                 genere.push(result.entities.Genere[i]);
@@ -41,7 +48,10 @@ class StreamAdvLuis {
             }
             serie = "serie tv";
             return { Media: serie, Generi: genere };
-        }   
+        } else {
+            console.log("errore luis");
+            return { Media: undefined, Generi: undefined };
+        }
     }
 }
 

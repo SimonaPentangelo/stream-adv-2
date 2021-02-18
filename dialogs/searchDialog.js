@@ -6,6 +6,7 @@ require('dotenv').config({
 });
 
 var request = require('request');
+const { LuisRecognizer } = require('botbuilder-ai');
 
 // Import required types from libraries
 const {
@@ -22,13 +23,16 @@ const { ComponentDialog,
         WaterfallDialog 
 } = require('botbuilder-dialogs');
 
-const { RESULT_DIALOG,
-    ResultDialog } = require('./resultDialog');
+const { 
+    RESULT_DIALOG,
+    ResultDialog 
+} = require('./resultDialog');
 
 const SEARCH_DIALOG = 'SEARCH_DIALOG';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
 const KEY_TMDB = process.env.TheMovieDBAPI;
+var login;
 
 // Secondary dialog, manages the reservation of a new seminar by composing an email
 class SearchDialog extends ComponentDialog {
@@ -66,12 +70,13 @@ class SearchDialog extends ComponentDialog {
     }
 
     async inputStep(step) {
+        login = step.options.login;
         if (!this.luisRecognizer.isConfigured) {
             const messageText = 'NOTE: LUIS is not configured. To enable all capabilities, add `LuisAppId`, `LuisAPIKey` and `LuisAPIHostName` to the .env file.';
             await step.context.sendActivity(messageText, null, InputHints.IgnoringInput);
             return await step.next();
         }
-        const messageText = step.options.restartMsg ? step.options.restartMsg : `Cosa stai cercando? Scrivi se vuoi un film o una serie ed il/i generi che cerchi.`;
+        const messageText = step.options.restartMsg ? step.options.restartMsg : `Se vuoi fare una ricerca, scrivimi se stai cercando un film o una serie tv (**max 3 generi**), altrimenti dimmi cos'altro posso fare per te.`;
         const promptMessage = MessageFactory.text(messageText, messageText, InputHints.ExpectingInput);
         return await step.prompt(TEXT_PROMPT, { prompt: promptMessage });
     }
@@ -136,67 +141,111 @@ class SearchDialog extends ComponentDialog {
             });
         }
 
-    getResult(urlString, type) {
-        var res = [];
-        return new Promise(function(resolve, reject) {
-            request({
-              method: 'GET',
-             url: urlString,
-             headers: {
-             'Content-Type': 'application/json',
-             }}, function (error, response, body) {
-                 if(type == 'film') {
-                    var obj = JSON.parse(body);
-                    var i = 0;
-                    while(obj.results[i]) {
-                       var s = JSON.stringify(obj.results[i].title);
-                       var ide = JSON.stringify(obj.results[i].id);
-                       res.push({ name:s.substring(1, s.length - 1), id: ide });
-                       if(i == 6) {
-                           break;
-                       }
-                       i++;
-                    }
-                    resolve(res);
-                 } else {
-                    var obj = JSON.parse(body);
-                    var i = 0;
-                    while(obj.results[i]) {
-                       var s = JSON.stringify(obj.results[i].name);
-                       var ide = JSON.stringify(obj.results[i].id);
-                       res.push({ name:s.substring(1, s.length - 1), id: ide });
-                       if(i == 6) {
-                           break;
-                       }
-                       i++;
-                    }
-                    console.log("SEARCH DIALOG: " + res);
-                    resolve(res);
-                 }
+        getResult(urlString, type) {
+            var res = [];
+            return new Promise(function(resolve, reject) {
+                request({
+                  method: 'GET',
+                 url: urlString,
+                 headers: {
+                 'Content-Type': 'application/json',
+                 }}, function (error, response, body) {
+                     if(type == 'movie') {
+                        var obj = JSON.parse(body);
+                        var i = 0;
+                        while(obj.results[i]) {
+                           var title = JSON.stringify(obj.results[i].title).substring(1, JSON.stringify(obj.results[i].title).length-1);
+                           var ide = JSON.stringify(obj.results[i].id);
+                           var snippet;
+                           if(!obj.results[i].overview) {
+                               snippet = "Trama non disponibile.";
+                           } else {
+                                snippet = JSON.stringify(obj.results[i].overview).substring(1, JSON.stringify(obj.results[i].overview).length-1);
+                           }
+                           var img = 'https://www.themoviedb.org/t/p/w600_and_h900_bestv2' + JSON.stringify(obj.results[i].poster_path).substring(1, JSON.stringify(obj.results[i].poster_path).length-1);
+                           res.push({ "id": ide, "name": title, "type": type, "snippet": snippet, "image": img });
+                           if(i == 5) {
+                               break;
+                           }
+                           i++;
+                        }
+                        console.log(res);
+                        resolve(res);
+                     } else {
+                        var obj = JSON.parse(body);
+                        var i = 0;
+                        while(obj.results[i]) {
+                            var title = JSON.stringify(obj.results[i].name).substring(1, JSON.stringify(obj.results[i].name).length-1);
+                            var ide = JSON.stringify(obj.results[i].id);
+                            var snippet;
+                            if(!obj.results[i].overview) {
+                                snippet = "Trama non disponibile.";
+                            } else {
+                                 snippet = JSON.stringify(obj.results[i].overview).substring(1, JSON.stringify(obj.results[i].overview).length-1);
+                            }
+                            var img = 'https://www.themoviedb.org/t/p/w600_and_h900_bestv2' + JSON.stringify(obj.results[i].poster_path).substring(1, JSON.stringify(obj.results[i].poster_path).length-1);
+                            res.push({ "id": ide, "name": title, "type": type, "snippet": snippet, "image": img });
+                            if(i == 5) {
+                                break;
+                            }
+                            i++;
+                        }
+                        console.log("SEARCH DIALOG: " + res);
+                        resolve(res);
+                     }
+             });
          });
-     });
-    }
+        }
 
     async searchStep(step) {
-
+        let userProfile = this.userProfileAccessor.get(step.context);
             const reply = {
                 type: ActivityTypes.Message
             };
             
             const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
-            const res = await this.luisRecognizer.getMediaEntities(luisResult);
+            if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search') {
+                return await step.replaceDialog(this.id);    
+            } else if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'LoginAction') {
+                if(login == undefined) {
+                    reply.text = '**Per effettuare il login, devi tornare al menu principale.**';
+                    await step.context.sendActivity(reply)
+                    return await step.endDialog({ res:"BACK", login: login });
+                } else {
+                    reply.text = '**Hai già effettuato il login**';
+                    await step.context.sendActivity(reply);
+                    return await step.replaceDialog(this.id);
+                }
+            } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'LogoutAction') {
+                if(login == undefined) {
+                    reply.text = '**Non hai ancora effettuato il login.**';
+                    await step.context.sendActivity(reply);
+                    return await step.replaceDialog(this.id);
+                } else {
+                    reply.text = '**Per effettuare il logout, devi tornare al menu principale.**';
+                    await step.context.sendActivity(reply)
+                    return await step.endDialog({ res:"BACK", login:login });
+                }
+            } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'DeleteAll' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistShow' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistDelete') {
+                reply.text = '**Per gestire la tua watchlist, devi prima accedere al menu apposito.**';
+                await step.context.sendActivity(reply)
+                return await step.endDialog({ res:"BACK", login:login });
+            } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistAdd' ) {
+                reply.text = '**Se vuoi aggiungere un elemento alla lista, devi prima fare una ricerca!**';
+                await step.context.sendActivity(reply)
+                return await step.replaceDialog(this.id);
+            } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Menu') { 
+                return await step.endDialog({ res:"BACK", login:login });
+            } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Back') {
+                return await step.endDialog({ res:"BACK", login:login });
+             } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'SearchAdvanced') {
+                const res = await this.luisRecognizer.getMediaEntities(luisResult);
             console.log("risultato: " + res.Media + " " + res.Generi[0]);
-            /*const res = {
-                Media: 'film',
-                Generi: [
-                    'crime'
-                ]
-            }*/
             switch (res.Media) {
                 case 'film': {
 
                     var gen = await this.getGenresMovies();
-                    console.log("STAMPA: " + gen.genres);
+                    console.log(gen.genres);
                     let i = 0;
                     let countG = 0;
                     let countC = 0;
@@ -444,7 +493,7 @@ class SearchDialog extends ComponentDialog {
                                 }
                                 countG++;
                                 var j = 0;
-                                while(gen.genresj[j]) {
+                                while(gen.genres[j]) {
                                     var temp = JSON.stringify(gen.genres[j].name);
                                     var stringa = temp.substring(1, temp.length - 1)
                                 if(stringa == "Thriller") {
@@ -535,9 +584,9 @@ class SearchDialog extends ComponentDialog {
                         reqQuery = "https://api.themoviedb.org/3/discover/movie?api_key=" + KEY_TMDB + "&language=it-IT&with_keywords=" + stringaChiavi + "&with_genres=" + stringaGeneri + "&page=1"
                     }
                     console.log(reqQuery);
-                    var result = await this.getResult(reqQuery, "film");
+                    var result = await this.getResult(reqQuery, "movie");
                     console.log(result);
-                    return await step.beginDialog(RESULT_DIALOG, { type : 'movie', list : result });
+                    return await step.beginDialog(RESULT_DIALOG, { login: login, list : result });
                 }
                 case 'serie tv': {
 
@@ -854,9 +903,9 @@ class SearchDialog extends ComponentDialog {
                         reqQuery = "https://api.themoviedb.org/3/discover/tv?api_key=" + KEY_TMDB + "&language=it-IT&with_keywords=" + stringaChiavi + "&with_genres=" + stringaGeneri + "&page=1"
                     }
                     console.log(reqQuery);
-                    var result = await this.getResult(reqQuery, "serie tv");
+                    var result = await this.getResult(reqQuery, "tv");
                     console.log(result);
-                    return await step.beginDialog(RESULT_DIALOG, { type : 'tv', list : result });
+                    return await step.beginDialog(RESULT_DIALOG, { login: login, list : result });
                 } default: {
                      // The user did not enter input that this bot was built to handle.
                     reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';
@@ -864,13 +913,21 @@ class SearchDialog extends ComponentDialog {
                 }
             return await step.replaceDialog(this.id);
         }
+            } else {
+                reply.text = '**Sembra che tu abbia digitato un comando che non conosco! Riprova.**';
+                await step.context.sendActivity(reply);
+                return await step.replaceDialog(this.id);  
+            }
     }
     
     async loopStep(step) {
         if(step.result != undefined) {
             if(step.result.res == "MAIN") {
-                return await step.endDialog({ res: "MAIN"});
+                login = step.result.login;
+                return await step.endDialog({ res: "MAIN", login : login });
             } else if(step.result.res == "SEARCH") {
+                return await step.replaceDialog(this.id);
+            } else if(step.result.res == "BACK") {
                 return await step.replaceDialog(this.id);
             }
         }

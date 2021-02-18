@@ -44,6 +44,7 @@ const TEXT_PROMPT = 'TEXT_PROMPT';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 const USER_PROFILE_PROPERTY = 'USER_PROFILE_PROPERTY';
 var login;
+var userProfile;
 
 class MainDialog extends ComponentDialog {
     constructor(luisRecognizer, userState) {
@@ -55,7 +56,7 @@ class MainDialog extends ComponentDialog {
         this.userProfileAccessor = userState.createProperty(USER_PROFILE_PROPERTY);
         this.addDialog(new SearchDialog(this.luisRecognizer, this.userProfileAccessor));
         this.addDialog(new LogoutDialog(this.userProfileAccessor));
-        this.addDialog(new WatchlistMenuDialog(this.userProfileAccessor));
+        this.addDialog(new WatchlistMenuDialog(this.luisRecognizer, this.userProfileAccessor));
         this.addDialog(new LoginDialog(this.userProfileAccessor));
         this.addDialog(new TextPrompt(TEXT_PROMPT));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
@@ -82,13 +83,13 @@ class MainDialog extends ComponentDialog {
 
         async mainMenuStep(step) {
             console.log("MENUSTEP");
-            let userProfile = await this.userProfileAccessor.get(step.context);
+            userProfile = await this.userProfileAccessor.get(step.context);
                 const reply = {
                     type: ActivityTypes.Message
                 };
                 var buttons = [];
 
-                console.log("PROFILE: " + userProfile);
+                console.log(userProfile);
                 if(userProfile == undefined) {
                     buttons = [{
                         type: ActionTypes.ImBack,
@@ -129,41 +130,75 @@ class MainDialog extends ComponentDialog {
                 reply.attachments = [card];
                 await step.context.sendActivity(reply);
                 return await step.prompt(TEXT_PROMPT, {
-                    prompt: 'Seleziona un\'opzione dal menu per proseguire!'
+                    prompt: 'Seleziona un\'opzione dal menu o dimmi cosa vorresti fare per proseguire!'
                 });
         }
 
      // Forwards to the correct dialog based on the menu option or the intent recognized by LUIS
      async mainOptionsStep(step) {
+        //let userProfile = this.userProfileAccessor.get(step.context);
         const reply = {
             type: ActivityTypes.Message
         };
         const option = step.result;
-        //const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
-        if (option === 'search' /*|| LuisRecognizer.topIntent(luisResult) === 'search'*/) {
-            return await step.beginDialog(SEARCH_DIALOG);    
-        } else if (option === 'login' /*|| LuisRecognizer.topIntent(luisResult) === 'login'*/) {
-            return await step.beginDialog(LOGIN_DIALOG);    
-        } else if(option === 'manage' /*|| LuisRecognizer.topIntent(luisResult) === 'watchlist'*/) {
-            return await step.beginDialog(WATCHLISTMENU_DIALOG);
-        } else if(option === 'logout' /*|| LuisRecognizer.topIntent(luisResult) === 'logout'*/) {
-            return await step.beginDialog(LOGOUT_DIALOG, { logout : login }); 
-        } else {
-            reply.text = 'Sembra che tu abbia digitato un comando che non conosco! Riprova.';
+        const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
+        console.log(luisResult);
+        if (option === 'search' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'SearchAdvanced') {
+            return await step.beginDialog(SEARCH_DIALOG, {login : login});    
+        } else if (option === 'login' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'LoginAction') {
+            console.log(userProfile==undefined);
+            if(login == undefined) {
+                console.log("LOGIN");
+                return await step.beginDialog(LOGIN_DIALOG, { login: login });    
+            } else {
+                reply.text = '**Hai già effettuato il login.**';
+                await step.context.sendActivity(reply); 
+            }
+        } else if(option === 'manage') {
+            return await step.beginDialog(WATCHLISTMENU_DIALOG, { login: login });
+        } else if(option === 'logout' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'LogoutAction') {
+            if(login == undefined) {
+                reply.text = '**Non hai ancora effettuato il login.**';
+                await step.context.sendActivity(reply);
+            } else {
+                return await step.beginDialog(LOGOUT_DIALOG, { logout : login });  
+            }
+        } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'DeleteAll' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistShow' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistDelete') {
+            return await step.beginDialog(WATCHLISTMENU_DIALOG, { login : login });
+        } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistAdd' ) {
+            reply.text = '**Se vuoi aggiungere un elemento alla lista, devi prima fare una ricerca!**';
             await step.context.sendActivity(reply)
+            return await step.beginDialog(SEARCH_DIALOG, { login: login});
+        } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Menu') { 
+            return await step.replaceDialog(this.id);
+        } else {
+            reply.text = '**Sembra che tu abbia digitato un comando che non conosco! Riprova.**';
+            await step.context.sendActivity(reply);
         }
         return await step.replaceDialog(this.id);
     }
 
     async mainLoopStep(step) {
-        if(step.result != undefined && step.result.res == "LOGIN") {
-            login = step.result.login;
-        } else if(step.result != undefined && step.result.res == "LOGOUT") {
-            login = undefined;
-            this.userProfileAccessor.set(step.context, undefined);
+        console.log("AIUTOOOOOOO");
+        if(step.result != undefined) {
+            switch(step.result.res) {
+                case "LOGIN": {
+                    console.log("AIUTO");
+                    login = step.result.login;
+                    console.log(login);
+                    break;
+                }
+                case "LOGOUT": {
+                    login = undefined;
+                    break;
+                }
+                default: {
+                    login = step.result.login
+                    break;
+                }
+            }
+            return await step.replaceDialog(this.id);
         }
-        console.log(this.id);
-        return await step.replaceDialog(this.id);
     }
 }
 module.exports.MainDialog = MainDialog;

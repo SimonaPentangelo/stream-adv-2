@@ -25,14 +25,14 @@ class LoginDialog extends ComponentDialog {
     constructor(userProfileAccessor) {
         super(LOGIN_DIALOG, process.env.connectionName);
 
-        if (!userProfileAccessor) throw new Error('Missing parameter.  userProfileAccessor is required');
+        //if (!userProfileAccessor) throw new Error('Missing parameter.  userProfileAccessor is required');
         this.userProfileAccessor = userProfileAccessor;
 
         prompt = new OAuthPrompt(OAUTH_PROMPT, {
-            connectionName: process.env.connectionName,
-            text: 'Clicca per essere rendirizzato al login:',
-            title: 'Login',
-            timeout: 300000
+                connectionName: process.env.connectionName,
+                text: 'Clicca per essere rendirizzato al login:',
+                title: 'Login',
+                timeout: 300000
         });
         this.addDialog(prompt);
         this.addDialog(new ConfirmPrompt(CONFIRM_PROMPT));
@@ -59,12 +59,12 @@ class LoginDialog extends ComponentDialog {
 
     async welcomeStep(step) {
         this.userProfileAccessor.set(step.context, new User());
-        return await step.beginDialog(OAUTH_PROMPT);
+            return await step.beginDialog(OAUTH_PROMPT);
     }
 
     async loginStep(step) {
         let userProfile = await this.userProfileAccessor.get(step.context);
-        const tokenResponse = step.result;
+            const tokenResponse = step.result;
         if (tokenResponse) {
             var nome = await OAuthHelpers.listMe(step.context, tokenResponse)
             var email = await OAuthHelpers.listEmailAddress(step.context, tokenResponse);
@@ -75,7 +75,8 @@ class LoginDialog extends ComponentDialog {
         } else {
             await step.context.sendActivity('**Il login non è andato a buon fine.**');
         }
-        return await step.endDialog({ res : "LOGIN", login : prompt });
+        console.log(prompt);
+        return await step.endDialog({ res : "LOGIN", login: prompt });
     }
 }
 module.exports.LoginDialog = LoginDialog;

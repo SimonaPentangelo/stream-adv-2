@@ -13,7 +13,8 @@ class DialogBot extends ActivityHandler {
         this.dialogState = this.conversationState.createProperty('DialogState');
         this.onMessage(async (context, next) => {
             await this.dialog.run(context, this.dialogState);
-            // By calling next() you ensure that the next BotHandler is run.
+            // Echo back what the user said
+            //await context.sendActivity(`You sent '${ context.activity.text }'`);
             await next();
         });
         this.onMembersAdded(async (context, next) => {
