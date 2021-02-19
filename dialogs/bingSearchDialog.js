@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 require('dotenv').config({ path: 'C:\Users\Simona\Desktop\stream-adv\.env' });
+var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
 const { LuisRecognizer } = require('botbuilder-ai');
 
@@ -137,18 +138,30 @@ class BingDialog extends ComponentDialog {
         });
     }
 
+    checkUrl(url) 
+    {
+        var http = new XMLHttpRequest();
+        http.open('HEAD', url, false);
+        http.send();
+        return http.status!=404;
+    }
+
     async searchStep(step) {
         const reply = {
             type: ActivityTypes.Message
         };
         if(count == 0) {
-
+            login = step.options.login;
             result = step.options.media;
             idFound = result.id;
             id = result.id;
             title = result.name;
             type = result.type;
-            image = result.image;
+            if(this.checkUrl(result.image)) {
+                image = result.image;
+            } else {
+                image = "Locandina non disponibile.";
+            }
             console.log('IMMAGINE: ' + image);
             snippet = result.snippet;
             streaming = await this.getStreaming();
@@ -170,22 +183,41 @@ class BingDialog extends ComponentDialog {
             }
         ];
 
-        const coso = '📌';
-        const tele = '📺';
-        const pen = '🖊️';
-        const card = CardFactory.heroCard(
-            coso + ' ' + title,
-            [image],
-            buttons, {
-                text: pen + ' ' + 'Trama: ' + snippet + '\n\n' + tele + ' ' + streaming
-            }
-        );
-    
-        reply.attachments = [card];
-        await step.context.sendActivity(reply);
-        return await step.prompt(TEXT_PROMPT, {
-            prompt: 'Seleziona un\'opzione dal menu per proseguire!'
-        });
+        if(image === "Locandina non disponibile.") {
+            const coso = '📌';
+            const tele = '📺';
+            const pen = '🖊️';
+            const card = CardFactory.heroCard(
+                image + '\n\n' + coso + ' ' + title,
+                undefined,
+                buttons, {
+                    text: pen + ' ' + 'Trama: ' + snippet + '\n\n' + tele + ' ' + streaming
+                }
+            );
+
+            reply.attachments = [card];
+            await step.context.sendActivity(reply);
+            return await step.prompt(TEXT_PROMPT, {
+                prompt: 'Seleziona un\'opzione dal menu per proseguire!'
+            });
+        } else {
+            const coso = '📌';
+            const tele = '📺';
+            const pen = '🖊️';
+            const card = CardFactory.heroCard(
+                coso + ' ' + title,
+                [image],
+                buttons, {
+                    text: pen + ' ' + 'Trama: ' + snippet + '\n\n' + tele + ' ' + streaming
+                }
+            );
+
+            reply.attachments = [card];
+            await step.context.sendActivity(reply);
+            return await step.prompt(TEXT_PROMPT, {
+                prompt: 'Seleziona un\'opzione dal menu per proseguire!'
+            });
+        }
     }  
 
     async branchStep(step) {
@@ -196,7 +228,7 @@ class BingDialog extends ComponentDialog {
         const option = step.result;
         const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
         console.log(option);
-        if (option === 'search' ||LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'SearchAdvanced') {
+        if (option === 'search' ||LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.6) === 'SearchAdvanced') {
             count = 0;
             console.log("search");
             return await step.endDialog({ res : "SEARCH", login: login });
@@ -246,11 +278,17 @@ class BingDialog extends ComponentDialog {
     }
 
     async endStep(step) {
-        console.log("END BING SEARCH");
+        console.log("FINE BSEARCH");
+        console.log(login);
         if(step.result != undefined) {
             if(step.result.res == "RESULT") {
                 count = 0;
                 return await step.endDialog({ res : "RESULT", login: login });
+            } else if(step.result.res == "MAIN") {
+                count = 0;
+                return await step.endDialog({ res : "MAIN", login: login });
+            } else if(step.result.res == "BACK") {
+                return await step.replaceDialog(this.id);
             }
         } else {
             return await step.replaceDialog(this.id);

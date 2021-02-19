@@ -38,6 +38,7 @@ var flag;
 var flagAll;
 var userRes;
 var rM;
+var login;
 
 const database = client.database('botdb');
 const user = database.container('User');
@@ -72,6 +73,7 @@ class WatchlistDeleteDialog extends ComponentDialog {
     }
 
     async listStep(step) {
+        login = step.options.login;
         if(step.options.user == undefined) {
         flag = false;
         let userProfile = await this.userProfileAccessor.get(step.context);
@@ -129,9 +131,7 @@ class WatchlistDeleteDialog extends ComponentDialog {
                 value: resultMedia[j].title
             });
 
-            if(j + 1 != resultMedia.length) {
-                buttons.push({});
-            }
+            buttons.push({});
             j++;
         }
 
@@ -157,7 +157,7 @@ class WatchlistDeleteDialog extends ComponentDialog {
         const option = step.result;
         const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
         console.log(option);
-        if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'SearchAdvanced') {
+        if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.6) === 'SearchAdvanced') {
             reply.text = '**Per fare una ricerca devi tornare al menu principale!**';
             await step.context.sendActivity(reply);
             return await step.endDialog({ res : "MAIN", login: login }); 

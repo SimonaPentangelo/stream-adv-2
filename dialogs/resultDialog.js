@@ -80,32 +80,40 @@ class ResultDialog extends ComponentDialog {
             type: ActivityTypes.Message
         };
 
-        while(info[i]) {
-            buttons.push({
-                type: ActionTypes.ImBack,
-                title: info[i].name,
-                value: info[i].name
-            });
-
-            if(i == 5) {
-                break;
-            }
-            i++;
-        }
-        console.log(buttons);
-        const card = CardFactory.heroCard(
-            '',
-            undefined,
-            buttons, {
-                text: 'Ecco i risultati:'
+        if(info.length == 0) {
+            count = 0;
+            await step.context.sendActivity("**Sembra che non ci siano risultati, prova a fare una nuova ricerca!");
+            return await step.endDialog({ res : "SEARCH", login: login }); 
+        } else {
+            while(info[i]) {
+                buttons.push({
+                    type: ActionTypes.ImBack,
+                    title: info[i].name,
+                    value: info[i].name
+                });
+    
+                buttons.push({});
+                
+                if(i == 5) {
+                    break;
                 }
-            );
-
-            reply.attachments = [card];
-            await step.context.sendActivity(reply);
-            return await step.prompt(TEXT_PROMPT, {
-                prompt: 'Seleziona un\'opzione per vederne i dettagli, altrimenti dimmi cos\'altro posso fare per te.'
-            });
+                i++;
+            }
+            console.log(buttons);
+            const card = CardFactory.heroCard(
+                '',
+                undefined,
+                buttons, {
+                    text: 'Ecco i risultati:'
+                    }
+                );
+    
+                reply.attachments = [card];
+                await step.context.sendActivity(reply);
+                return await step.prompt(TEXT_PROMPT, {
+                    prompt: 'Seleziona un\'opzione per vederne i dettagli, altrimenti dimmi cos\'altro posso fare per te.'
+                });
+        }
     }
 
     async branchStep(step) {
@@ -116,7 +124,7 @@ class ResultDialog extends ComponentDialog {
         const option = step.result;
         console.log(option);
         const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
-        if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'SearchAdvanced') {
+        if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.6) === 'SearchAdvanced') {
             count = 0;
             return await step.endDialog({ res: "SEARCH", login: login });   
         } else if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'LoginAction') {
@@ -179,6 +187,8 @@ class ResultDialog extends ComponentDialog {
     }
 
     async endStep(step) {
+        console.log("FINE RESULT");
+        console.log(login);
         console.log(step.result);
         if(step.result != undefined) {
             if(step.result.res == "MAIN") {

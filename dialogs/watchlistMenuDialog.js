@@ -43,6 +43,7 @@ const WATCHLISTMENU_DIALOG = 'WATCHLISTMENU_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 var login;
+var count = 0;
 
 class WatchlistMenuDialog extends ComponentDialog {
     constructor(luisRecognizer, userProfileAccessor) {
@@ -75,18 +76,20 @@ class WatchlistMenuDialog extends ComponentDialog {
     }
 
     async checkStep(step) {
-        let userProfile = await this.userProfileAccessor.get(step.context);
-        if(userProfile == undefined && step.result == undefined) {
+        if(count == 0) {
+            login = step.options.login;
+            count++;
+        }
+        if(login == undefined) {
             await step.context.sendActivity(`**Per gestire la tua watchlist, devi fare il login.**`); 
             return await step.beginDialog(LOGIN_DIALOG); 
         } else {
-            login = step.options.login;
             return await step.next();
         }
     }
 
         async menuStep(step) {
-            if(step.result != undefined) {
+            if(login == undefined) {
                 login = step.result.login;
             }
                 const reply = {
@@ -138,9 +141,10 @@ class WatchlistMenuDialog extends ComponentDialog {
         const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
         console.log("WATCHLIST MENU");
         console.log(luisResult);
-        if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'SearchAdvanced') {
+        if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.6) === 'SearchAdvanced') {
             reply.text = '**Per fare una ricerca devi tornare al menu principale!**';
             await step.context.sendActivity(reply);
+            count = 0;
             return await step.endDialog({ res : "MAIN", login: login }); 
         } else if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'LoginAction') {
             reply.text = '**Hai già effettuato il login.**';
@@ -148,6 +152,7 @@ class WatchlistMenuDialog extends ComponentDialog {
         } else if(option === 'logout' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'LogoutAction') {
             reply.text = '**Per fare il logout devi tornare al menu principale!**';
             await step.context.sendActivity(reply);
+            count = 0;
             return await step.endDialog({ res : "MAIN", login: login }); 
         } else if(option === 'deleteAll' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'DeleteAll') {
             return await step.beginDialog(DELETEALL_DIALOG, { login:login }); 
@@ -158,12 +163,15 @@ class WatchlistMenuDialog extends ComponentDialog {
         } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistAdd' ) {
             reply.text = '**Se vuoi aggiungere un elemento alla lista, devi prima fare una ricerca!**';
             await step.context.sendActivity(reply);
+            count = 0;
             return await step.endDialog({ res : "MAIN", login: login });
         } else if (option === 'delete' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistDelete' ) {
             return await step.beginDialog(WATCHLISTDELETE_DIALOG, { login:login });    
         } else if(option === 'back' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Back' ) {
+            count = 0;
             return await step.endDialog({ res : "BACK", login: login }); 
         } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Menu' ) {
+            count = 0;
             return await step.endDialog({ res : "MAIN", login: login }); 
         } else {
             reply.text = '**Sembra che tu abbia digitato un comando che non conosco! Riprova.**';
@@ -173,10 +181,13 @@ class WatchlistMenuDialog extends ComponentDialog {
     }
 
     async loopStep(step) {
+        console.log("FINE WLMENU");
+        console.log(login);
         if(step.result != undefined) {
             switch(step.result.res) {
                 case "MAIN": {
                     login = step.result.login
+                    count = 0;
                     return await step.endDialog({ res : "MAIN", login: login }); 
                 }
                 case "WATCHLIST": {
@@ -188,6 +199,8 @@ class WatchlistMenuDialog extends ComponentDialog {
                     break;
                 }
             }
+            console.log(login);
+            count++;
             return await step.replaceDialog(this.id);
         }
     }

@@ -41,7 +41,7 @@ const {
 const WATCHLISTADD_DIALOG = 'WATCHLISTADD_DIALOG';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 var m;
-var u;
+var uS;
 var rM;
 var login;
 
@@ -56,6 +56,7 @@ class WatchlistAddDialog extends ComponentDialog {
         this.userProfileAccessor = userProfileAccessor;
         this.luisRecognizer = luisRecognizer;
         this.addDialog(new WatchlistMenuDialog(this.luisRecognizer, this.userProfileAccessor));
+        this.addDialog(new WatchlistDeleteDialog(this.luisRecognizer, this.userProfileAccessor));
         this.addDialog(new LoginDialog(this.userProfileAccessor));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.checkStep.bind(this),
@@ -91,7 +92,7 @@ class WatchlistAddDialog extends ComponentDialog {
     }
     
     async addStep(step) {
-        if(step.result != undefined) {
+        if(login == undefined) {
             login = step.result.login;
         }
         console.log("add step");
@@ -150,7 +151,7 @@ class WatchlistAddDialog extends ComponentDialog {
             }
 
             if(resultUser[0].watchlist.length == 10) {
-                u = resultUser[0];
+                uS = resultUser;
                 rM = resultMedia;
                 await step.context.sendActivity('**Hai troppi elementi nella tua watchlist.**');
                 return await step.beginDialog(WATCHLISTDELETE_DIALOG, { user : resultUser[0], login : login });
@@ -168,33 +169,41 @@ class WatchlistAddDialog extends ComponentDialog {
     }
 
     async endStep(step) {
+        console.log("FINE WLADD");
+        console.log(login);
         if(step.result != undefined) {
             switch(step.result.res) {
                 case "BACK": {
+                    login = step.result.login;
                     return await step.endDialog({ res : "RESULT", login : login });
                 }
                 case "WATCHLIST": {
+                    login = step.result.login;
                     return await step.endDialog({ res : "RESULT", login : login });
                 }
                 case "DELETE": {
+                    console.log(uS);
+                    login = step.result.login;
                     if(rM.length == 0) {
                         const { resource: createdItem } = await media.items.create(m);
                     }
     
-                    var adding = {
+                    /*var adding = {
                         "media": m.id_tmdb
-                    }
+                    }*/
     
-                    u.watchlist.push(adding);
-                    const { resource : updatedUser } = await user.items.upsert(u);
+                    uS[0].watchlist.push(m.id_tmdb);
+                    const { resource : updatedUser } = await user.items.upsert(uS[0]);
                     await step.context.sendActivity('**Watchlist aggiornata con successo.**');
                     return await step.endDialog({ res : "RESULT", login: login });
                 }
                 case "NOTDELETE": {
+                    login = step.result.login;
                     await step.context.sendActivity('**La watchlist non è stata modificata.**');
                     return await step.endDialog({ res : "RESULT", login: login });
                 }
                 case "MAIN": {
+                    login = step.result.login;
                     return await step.endDialog({ res : "MAIN", login : login });
                 }
             }

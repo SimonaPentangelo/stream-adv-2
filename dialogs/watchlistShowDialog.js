@@ -124,9 +124,7 @@ class WatchlistShowDialog extends ComponentDialog {
                     value: resultMedia[j].title
                 });
 
-                if(j + 1 != resultMedia.length) {
-                    buttons.push({});
-                }
+                buttons.push({});
                 j++;
             }
 
@@ -154,9 +152,9 @@ class WatchlistShowDialog extends ComponentDialog {
             type: ActivityTypes.Message
         };
         const option = step.result;
-        console.log(option);
+        console.log(login);
         const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
-        if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'SearchAdvanced') {
+        if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.6) === 'SearchAdvanced') {
             reply.text = '**Per fare una ricerca devi tornare al menu principale!**';
             await step.context.sendActivity(reply);
             return await step.endDialog({ res : "MAIN", login: login }); 
@@ -240,7 +238,7 @@ class WatchlistShowDialog extends ComponentDialog {
         const option = step.result;
         const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
         console.log(option);
-        if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'SearchAdvanced') {
+        if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.6) === 'SearchAdvanced') {
             reply.text = '**Per fare una ricerca devi tornare al menu principale!**';
             await step.context.sendActivity(reply);
             return await step.endDialog({ res : "MAIN", login: login }); 

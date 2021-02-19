@@ -31,7 +31,8 @@
         "msal": "^1.4.4",
         "restify": "~8.5.1",
         "telegraf": "^4.0.3",
-        "trakt.tv": "^8.0.0"
+        "trakt.tv": "^8.0.0",
+        "xmlhttprequest": "^1.8.0"
     },
     "devDependencies": {
         "eslint": "^7.0.0",

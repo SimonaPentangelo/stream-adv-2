@@ -90,7 +90,7 @@ class MainDialog extends ComponentDialog {
                 var buttons = [];
 
                 console.log(userProfile);
-                if(userProfile == undefined) {
+                if(login == undefined) {
                     buttons = [{
                         type: ActionTypes.ImBack,
                         title: 'Ricerca',
@@ -100,7 +100,7 @@ class MainDialog extends ComponentDialog {
                             type: ActionTypes.ImBack,
                             title: 'Login',
                             value: 'login'
-                        }
+                        }, {}
                     ];
                 } else {
                     buttons = [{
@@ -143,10 +143,9 @@ class MainDialog extends ComponentDialog {
         const option = step.result;
         const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
         console.log(luisResult);
-        if (option === 'search' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'SearchAdvanced') {
+        if (option === 'search' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search' || LuisRecognizer.topIntent(luisResult, 'None', 0.6) === 'SearchAdvanced') {
             return await step.beginDialog(SEARCH_DIALOG, {login : login});    
         } else if (option === 'login' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'LoginAction') {
-            console.log(userProfile==undefined);
             if(login == undefined) {
                 console.log("LOGIN");
                 return await step.beginDialog(LOGIN_DIALOG, { login: login });    
@@ -193,7 +192,9 @@ class MainDialog extends ComponentDialog {
                     break;
                 }
                 default: {
-                    login = step.result.login
+                    console.log("default");
+                    login = step.result.login;
+                    console.log(login);
                     break;
                 }
             }

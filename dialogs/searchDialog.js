@@ -204,6 +204,7 @@ class SearchDialog extends ComponentDialog {
             };
             
             const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
+            console.log(luisResult);
             if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Search') {
                 return await step.replaceDialog(this.id);    
             } else if (LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'LoginAction') {
@@ -238,7 +239,7 @@ class SearchDialog extends ComponentDialog {
                 return await step.endDialog({ res:"BACK", login:login });
             } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'Back') {
                 return await step.endDialog({ res:"BACK", login:login });
-             } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'SearchAdvanced') {
+             } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.6) === 'SearchAdvanced') {
                 const res = await this.luisRecognizer.getMediaEntities(luisResult);
             console.log("risultato: " + res.Media + " " + res.Generi[0]);
             switch (res.Media) {
@@ -921,13 +922,17 @@ class SearchDialog extends ComponentDialog {
     }
     
     async loopStep(step) {
+        console.log("FINE SEARCH");
+        console.log(login);
         if(step.result != undefined) {
             if(step.result.res == "MAIN") {
                 login = step.result.login;
                 return await step.endDialog({ res: "MAIN", login : login });
             } else if(step.result.res == "SEARCH") {
+                login = step.result.login;
                 return await step.replaceDialog(this.id);
             } else if(step.result.res == "BACK") {
+                login = step.result.login;
                 return await step.replaceDialog(this.id);
             }
         }

@@ -1,0 +1,11 @@
+LuisAPIHostName=westeurope.api.cognitive.microsoft.com/
+LuisAPIKey=8deac7b2201442999160382a1a6d8c1b
+LuisAppId=a0f1b065-7504-4896-87c2-a55c92872808
+MicrosoftAppId=3bc8eab3-feb6-44bb-b831-796d4cbb05be 
+MicrosoftAppPassword=.6S-.W2Kjs_fe7nIjp2SiA8j1-Izy9g~v5
+ScmType=None
+TheMovieDBAPI=c3fca9451dd83145763b68b068f2fdc2
+connectionName=AuthSA
+CosmosDBEndpoint=https://stream-adv-db.documents.azure.com:443/
+CosmosDBKey=HHmaCc9fqOehV88PNHlLhHiiHCzfHJrpqkjSlNartzfptiQbAC7smZBbrwjhgkq0g2MOg7vdw7m1rFnfmDQ1EQ==
+TelegramKey=1666093257:AAFhhSCyBkqjAOc07W37eTc7VO_OIamU_AI
