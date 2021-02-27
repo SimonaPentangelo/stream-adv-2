@@ -95,7 +95,6 @@ class WatchlistShowDialog extends ComponentDialog {
             
             var queryMedia = { query: "", parameters: [] };
             var queryString = "SELECT * FROM Media m WHERE "
-            console.log("sono qui a caso");
             var i = 0;
             while(i < resultUser[0].watchlist.length) {
                 queryString = queryString.concat("m.id_tmdb = @id" + i + " ");

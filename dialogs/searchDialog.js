@@ -53,11 +53,6 @@ class SearchDialog extends ComponentDialog {
         this.initialDialogId = WATERFALL_DIALOG;
     }
     
-    
-    /**
-     * The run method handles the incoming activity (in the form of a TurnContext) and passes it through the dialog system.
-     * If no dialog is active, it will start the default dialog.
-     */
     async run(turnContext, accessor) {
         const dialogSet = new DialogSet(accessor);
         dialogSet.add(this);
@@ -129,7 +124,6 @@ class SearchDialog extends ComponentDialog {
                     while(obj.results[i]) {
                         console.log(obj.results[i]);
                         if(obj.results[i].name == s) {
-                            console.log("TROVATA");
                             key = obj.results[i];
                             console.log("KEY: " + key);
                             break;
@@ -598,7 +592,6 @@ class SearchDialog extends ComponentDialog {
                     let countC = 0;
                     let stringaGeneri = "";
                     let stringaChiavi = "";
-                    console.log("SONO QUI");
                     console.log(res.Generi[i]);
                     while(res.Generi[i]) {
                         var s = JSON.stringify(res.Generi[i]);
@@ -713,7 +706,6 @@ class SearchDialog extends ComponentDialog {
                                 break; }
                             case "storico": { 
                                 //history
-                                console.log('QUI QUO QUA');
                                 var obj = await this.getKeyword("history");
                                 if(countC != 0) {
                                   stringaChiavi = stringaChiavi.concat(",");

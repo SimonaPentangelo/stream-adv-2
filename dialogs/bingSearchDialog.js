@@ -24,11 +24,6 @@ const { ComponentDialog,
 } = require('botbuilder-dialogs');
 
 const {
-    LOGIN_DIALOG,
-    LoginDialog
-} = require('./loginDialog');
-
-const {
     WATCHLISTADD_DIALOG,
     WatchlistAddDialog
 } = require('./watchlistAddDialog');
@@ -77,34 +72,6 @@ class BingDialog extends ComponentDialog {
         }
     }
 
-    getMedia() {
-        var webPage;
-        return new Promise(function(resolve, reject) {
-            var info = {
-                url: 'https://api.bing.microsoft.com/v7.0/custom/search?' + 
-                    'q=' + idFound + '&customconfig=' + CUSTOM_CONFIG + '&mkt=en-US',
-                headers: {
-                    'Ocp-Apim-Subscription-Key' : BING_KEY
-                }
-            }
-            request(info, function(error, response, body){
-                var searchResponse = JSON.parse(body);
-                console.log(searchResponse);
-                var i = 0;
-                while(i < searchResponse.webPages.value.length) {
-                    if(searchResponse.webPages.value[i].displayUrl.includes(idFound) && searchResponse.webPages.value[i].displayUrl.includes(type) && !searchResponse.webPages.value[i].displayUrl.includes("season") && !searchResponse.webPages.value[i].displayUrl.includes("discuss")) {
-                        webPage = searchResponse.webPages.value[i];
-                        break;
-                    } else {
-                        i++;
-                    }
-                }
-                console.log("QUESTO DOVREBBE ESSE IL RISULTATO: " + JSON.stringify(webPage));
-                resolve(webPage);
-            });
-        });
-    }
-
     getStreaming() {
         var streaming;
         return new Promise(function(resolve, reject) {
@@ -122,7 +89,6 @@ class BingDialog extends ComponentDialog {
                 } else if(s.results.IT != undefined){
                     var i = 0;
                     var str = "";
-                    console.log("SONO PRIMA DEL WHILE");
                     while(s.results.IT.flatrate[i] != undefined) {
                         if(i != 0) {
                             str = str.concat(", ");

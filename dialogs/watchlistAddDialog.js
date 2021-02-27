@@ -79,7 +79,7 @@ class WatchlistAddDialog extends ComponentDialog {
     }
 
     async checkStep(step) {
-        console.log("ADD DIALOG CIAO!");
+        console.log("ADD DIALOG");
         login = step.options.login;
         m = step.options.media;
         console.log(m);
@@ -117,8 +117,7 @@ class WatchlistAddDialog extends ComponentDialog {
               }
             ]
         };
-        
-        console.log("HELP ME PLS");
+    
         const { resources: resultUser } = await user.items.query(queryUser).fetchAll();
         const { resources: resultMedia } = await media.items.query(queryMedia).fetchAll();
         console.log(resultUser);
@@ -129,7 +128,6 @@ class WatchlistAddDialog extends ComponentDialog {
                 const { resource: createdItem } = await media.items.create(m);
             }
 
-            console.log("AGGIUNGOOOOOOO")
             var u = {
                 "name": userProfile.name,
                 "email": userProfile.email,

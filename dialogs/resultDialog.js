@@ -50,11 +50,6 @@ class ResultDialog extends ComponentDialog {
         this.initialDialogId = WATERFALL_DIALOG;
     }
     
-    
-    /**
-     * The run method handles the incoming activity (in the form of a TurnContext) and passes it through the dialog system.
-     * If no dialog is active, it will start the default dialog.
-     */
     async run(turnContext, accessor) {
         const dialogSet = new DialogSet(accessor);
         dialogSet.add(this);
@@ -71,7 +66,6 @@ class ResultDialog extends ComponentDialog {
             login = step.options.login;
             info = step.options.list;
         } 
-        console.log("CIAO");
         console.log(info);
         var buttons = [];
         var i = 0;
@@ -99,7 +93,7 @@ class ResultDialog extends ComponentDialog {
                 }
                 i++;
             }
-            console.log(buttons);
+            
             const card = CardFactory.heroCard(
                 '',
                 undefined,

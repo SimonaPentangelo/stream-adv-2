@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/8624a7fa-108b-4bee-b379-249866515c63/resourceGroups/cloud-bot/providers/Microsoft.Web/sites/sadvisor-bot",
+    "appService.deploySubpath": "."
+}

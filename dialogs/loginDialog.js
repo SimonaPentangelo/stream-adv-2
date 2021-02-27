@@ -43,10 +43,7 @@ class LoginDialog extends ComponentDialog {
         ]));
         this.initialDialogId = WATERFALL_DIALOG;
     }
-    /**
-     * The run method handles the incoming activity (in the form of a TurnContext) and passes it through the dialog system.
-     * If no dialog is active, it will start the default dialog.
-     */
+    
     async run(turnContext, accessor) {
         const dialogSet = new DialogSet(accessor);
         dialogSet.add(this);

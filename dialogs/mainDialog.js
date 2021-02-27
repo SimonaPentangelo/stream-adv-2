@@ -66,16 +66,12 @@ class MainDialog extends ComponentDialog {
         ]));
         this.initialDialogId = WATERFALL_DIALOG;
     }
-    /**
-     * The run method handles the incoming activity (in the form of a TurnContext) and passes it through the dialog system.
-     * If no dialog is active, it will start the default dialog.
-     */
+    
     async run(turnContext, accessor) {
         const dialogSet = new DialogSet(accessor);
         dialogSet.add(this);
         const dialogContext = await dialogSet.createContext(turnContext);
         const results = await dialogContext.continueDialog();
-        console.log(results);
         if (results.status === DialogTurnStatus.empty) {
             await dialogContext.beginDialog(this.id);
         }
@@ -134,9 +130,7 @@ class MainDialog extends ComponentDialog {
                 });
         }
 
-     // Forwards to the correct dialog based on the menu option or the intent recognized by LUIS
      async mainOptionsStep(step) {
-        //let userProfile = this.userProfileAccessor.get(step.context);
         const reply = {
             type: ActivityTypes.Message
         };
@@ -178,11 +172,10 @@ class MainDialog extends ComponentDialog {
     }
 
     async mainLoopStep(step) {
-        console.log("AIUTOOOOOOO");
+        console.log("MAINLOOPSTEP");
         if(step.result != undefined) {
             switch(step.result.res) {
                 case "LOGIN": {
-                    console.log("AIUTO");
                     login = step.result.login;
                     console.log(login);
                     break;

@@ -157,7 +157,6 @@ class WatchlistMenuDialog extends ComponentDialog {
         } else if(option === 'deleteAll' || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'DeleteAll') {
             return await step.beginDialog(DELETEALL_DIALOG, { login:login }); 
         } else if(option == "show" || LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistShow') {
-            console.log("SONO NEL POSTO GIUSTO");
             console.log(login);
             return await step.beginDialog(WATCHLISTSHOW_DIALOG, { login: login });
         } else if(LuisRecognizer.topIntent(luisResult, 'None', 0.7) === 'WatchlistAdd' ) {
